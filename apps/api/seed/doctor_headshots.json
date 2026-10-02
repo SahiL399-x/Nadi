@@ -1,0 +1,18 @@
+{
+  "_comment": "Curated royalty-free doctor headshots from Unsplash (free license, no attribution required but appreciated). Verified 200 OK and visually checked as authentic clinical portraits on 2026-10-02. URL params crop to a 400x400 face-centred square. Seed task assigns these to the 10 seed doctors; move to Cloudflare R2 before the demo so they don't hotlink on a weak network.",
+  "source": "https://unsplash.com/s/photos/indian-doctor-portrait",
+  "license": "Unsplash License (free for commercial and non-commercial use)",
+  "url_template": "https://images.unsplash.com/photo-{id}?w=400&h=400&fit=crop&crop=faces&q=75",
+  "headshots": [
+    { "id": "1612349316228-5942a9b489c2", "gender": "M", "note": "arms crossed, stethoscope" },
+    { "id": "1612531386530-97286d97c2d2", "gender": "M", "note": "arms crossed, light coat" },
+    { "id": "1678940805950-73f2127f9d4e", "gender": "M", "note": "senior doctor, moustache" },
+    { "id": "1612523138351-4643808db8f3", "gender": "M", "note": "stethoscope, neutral bg" },
+    { "id": "1612349317150-e413f6a5b16d", "gender": "M", "note": "arms crossed, grey bg" },
+    { "id": "1659353888906-adb3e0041693", "gender": "F", "note": "female doctor, coat" },
+    { "id": "1612531385446-f7e6d131e1d0", "gender": "M", "note": "seated, white coat" },
+    { "id": "1730597842283-943c7986ee2c", "gender": "M", "note": "younger, green scrubs" },
+    { "id": "1659353885824-1199aeeebfc6", "gender": "M", "note": "hand on hip, white coat" },
+    { "id": "1659353888818-0e41520d086a", "gender": "F", "note": "female doctor, namaste pose" }
+  ]
+}
