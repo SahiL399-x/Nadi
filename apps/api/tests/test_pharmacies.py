@@ -5,10 +5,12 @@ from app.models import (
 )
 
 
-def _pharmacy_token(client, phone):
+def _pharmacy_token(client, db, phone):
+    # Pharmacies are server-provisioned, then authenticate via OTP.
+    db.add(User(id=uuid.uuid4(), phone=phone, role=Role.pharmacy, name="Ph"))
+    db.commit()
     client.post("/v1/auth/request-otp", json={"phone": phone})
-    r = client.post("/v1/auth/verify-otp",
-                    json={"phone": phone, "code": "123456", "role": "pharmacy", "name": "Ph"})
+    r = client.post("/v1/auth/verify-otp", json={"phone": phone, "code": "123456"})
     return r.json()["accessToken"], r.json()["userId"]
 
 
@@ -17,8 +19,8 @@ def test_decline_forwards_to_next_pharmacy(client, db):
     # The suite commits to a persistent DB with no rollback fixture, so reusing
     # fixed phone numbers would accumulate PENDING offers against the same users
     # and make the inbox-count assertions flaky across re-runs.
-    t1, ph1 = _pharmacy_token(client, f"+91{uuid.uuid4().int % 10**10:010d}")
-    t2, ph2 = _pharmacy_token(client, f"+91{uuid.uuid4().int % 10**10:010d}")
+    t1, ph1 = _pharmacy_token(client, db, f"+91{uuid.uuid4().int % 10**10:010d}")
+    t2, ph2 = _pharmacy_token(client, db, f"+91{uuid.uuid4().int % 10**10:010d}")
     pat = uuid.uuid4()
     db.add(User(id=pat, phone=f"+91{uuid.uuid4().int % 10**10:010d}", role=Role.patient, name="P"))
     db.flush()
