@@ -8,7 +8,7 @@ class RequestOtpIn(BaseModel):
 class VerifyOtpIn(BaseModel):
     phone: str
     code: str
-    role: str = "patient"   # dev role switcher chooses which portal to log into
+    role: str = "patient"   # ignored for privilege; new signups are always patients (see auth_service)
     name: str = ""
 
 
