@@ -13,8 +13,12 @@ def _pharmacy_token(client, phone):
 
 
 def test_decline_forwards_to_next_pharmacy(client, db):
-    t1, ph1 = _pharmacy_token(client, "+917000000001")
-    t2, ph2 = _pharmacy_token(client, "+917000000002")
+    # Unique phones per run -> fresh pharmacy users with clean inboxes.
+    # The suite commits to a persistent DB with no rollback fixture, so reusing
+    # fixed phone numbers would accumulate PENDING offers against the same users
+    # and make the inbox-count assertions flaky across re-runs.
+    t1, ph1 = _pharmacy_token(client, f"+91{uuid.uuid4().int % 10**10:010d}")
+    t2, ph2 = _pharmacy_token(client, f"+91{uuid.uuid4().int % 10**10:010d}")
     pat = uuid.uuid4()
     db.add(User(id=pat, phone=f"+91{uuid.uuid4().int % 10**10:010d}", role=Role.patient, name="P"))
     db.flush()
