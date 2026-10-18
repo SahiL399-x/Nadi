@@ -1,5 +1,6 @@
 import enum
 import uuid
+from datetime import datetime
 
 from sqlalchemy import Enum, Float, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
@@ -33,7 +34,7 @@ class Consultation(Base):
     booked_for: Mapped[str | None] = mapped_column(String, nullable=True)
     symptom_text_raw: Mapped[str] = mapped_column(String, default="")
     symptom_text_normalised: Mapped[str] = mapped_column(String, default="")
-    created_at = created_at_col()
+    created_at: Mapped[datetime] = created_at_col()
 
 
 class Report(Base):

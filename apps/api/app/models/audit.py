@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
@@ -13,4 +14,4 @@ class AuditLog(Base):
     action: Mapped[str] = mapped_column(String)
     entity: Mapped[str] = mapped_column(String)
     entity_id: Mapped[str] = mapped_column(String)
-    at = created_at_col()
+    at: Mapped[datetime] = created_at_col()

@@ -1,5 +1,6 @@
 import enum
 import uuid
+from datetime import datetime
 
 from sqlalchemy import Enum, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
@@ -31,7 +32,7 @@ class Prescription(Base):
     superseded_by: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("prescriptions.id"), nullable=True
     )
-    issued_at = created_at_col()
+    issued_at: Mapped[datetime] = created_at_col()
 
 
 class PrescriptionLine(Base):
@@ -51,7 +52,7 @@ class PharmacyConsent(Base):
     prescription_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("prescriptions.id"))
     pharmacy_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
     rank: Mapped[int] = mapped_column(Integer, default=0)  # routing order chosen by patient
-    granted_at = created_at_col()
+    granted_at: Mapped[datetime] = created_at_col()
 
 
 class PharmacyOffer(Base):

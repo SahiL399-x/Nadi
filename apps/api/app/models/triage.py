@@ -1,5 +1,6 @@
 import enum
 import uuid
+from datetime import datetime
 
 from sqlalchemy import Enum, Float, ForeignKey, String
 from sqlalchemy.dialects.postgresql import JSONB
@@ -25,7 +26,7 @@ class TriageResult(Base):
     drivers = mapped_column(JSONB)          # [{feature, contribution}]
     red_flags = mapped_column(JSONB)        # [str]
     model_version: Mapped[str] = mapped_column(String)   # MANDATORY
-    created_at = created_at_col()
+    created_at: Mapped[datetime] = created_at_col()
 
 
 class Referral(Base):
@@ -35,4 +36,4 @@ class Referral(Base):
     from_doctor_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
     to_specialty: Mapped[str] = mapped_column(String)
     reason: Mapped[str] = mapped_column(String)
-    created_at = created_at_col()
+    created_at: Mapped[datetime] = created_at_col()
