@@ -20,6 +20,18 @@ services:
       MINIO_ROOT_PASSWORD: nadi12345
     ports: ["9000:9000", "9001:9001"]
     volumes: ["nadi_minio:/data"]
+  ml-service:
+    build: ../apps/ml-service
+    ports: ["8001:8001"]
+  api:
+    build: ../apps/api
+    depends_on:
+      db: {condition: service_healthy}
+    environment:
+      DATABASE_URL: postgresql+psycopg://nadi:nadi@db:5432/nadi
+      ML_SERVICE_URL: http://ml-service:8001
+      S3_ENDPOINT: http://minio:9000
+    ports: ["8000:8000"]
 volumes:
   nadi_db:
   nadi_minio:
