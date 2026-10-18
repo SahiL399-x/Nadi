@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    database_url: str = "postgresql+psycopg://nadi:nadi@localhost:5432/nadi"
+    database_url: str = "postgresql+psycopg://nadi:nadi@localhost:5433/nadi"
     ml_service_url: str = "http://localhost:8001"
     jwt_secret: str = "dev-secret-change-me"
     jwt_alg: str = "HS256"
