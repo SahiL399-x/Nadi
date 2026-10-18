@@ -18,6 +18,9 @@ def get_current_user(
         payload = decode_token(authorization.removeprefix("Bearer "))
     except ValueError:
         raise HTTPException(status_code=401, detail="invalid token") from None
+    if payload.get("type") != "access":
+        # Refresh tokens must be exchanged at /v1/auth/refresh, not used directly.
+        raise HTTPException(status_code=401, detail="invalid token")
     user = db.get(User, payload["sub"])
     if user is None:
         raise HTTPException(status_code=401, detail="unknown user")

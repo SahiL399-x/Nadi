@@ -7,6 +7,9 @@ from app.schemas.doctor import DoctorOut
 
 _SLOTS = ["09:00", "09:30", "10:00", "11:00", "14:00", "16:30"]
 
+# Doctor.languages is stored as display names; the API filters by lang code.
+_LANG_NAMES = {"en": "English", "hi": "Hindi", "mr": "Marathi"}
+
 
 def _point(lat: float, lng: float):
     return func.cast(ST_SetSRID(ST_MakePoint(lng, lat), 4326), type_=Doctor.location.type)
@@ -31,7 +34,7 @@ def search(db: Session, specialty: str | None, lat: float, lng: float,
     if specialty:
         stmt = stmt.where(Doctor.specialty == specialty)
     if lang:
-        stmt = stmt.where(Doctor.languages.any(lang))
+        stmt = stmt.where(Doctor.languages.any(_LANG_NAMES.get(lang, lang)))
     stmt = stmt.order_by(dist.asc())
     rows = db.execute(stmt).all()
     return [_to_out(d, name, d_m / 1000.0) for (d, name, d_m) in rows]
