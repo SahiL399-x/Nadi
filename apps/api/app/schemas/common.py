@@ -41,3 +41,15 @@ class TriageResultOut(BaseModel):
     labs: list[LabValueOut]
     redFlags: list[str]
     modelVersion: str
+
+    @classmethod
+    def from_model(cls, tr) -> "TriageResultOut":
+        return cls(
+            acuity=tr.acuity.value,
+            acuityConfidence=tr.acuity_confidence,
+            specialties=tr.specialties or [],
+            drivers=tr.drivers or [],
+            labs=tr.labs or [],
+            redFlags=tr.red_flags or [],
+            modelVersion=tr.model_version,
+        )

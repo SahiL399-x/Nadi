@@ -24,6 +24,7 @@ class TriageResult(Base):
     acuity_confidence: Mapped[float] = mapped_column(Float)
     specialties = mapped_column(JSONB)      # [{name, score}]
     drivers = mapped_column(JSONB)          # [{feature, contribution}]
+    labs = mapped_column(JSONB)             # [LabValue] extracted from reports
     red_flags = mapped_column(JSONB)        # [str]
     model_version: Mapped[str] = mapped_column(String)   # MANDATORY
     created_at: Mapped[datetime] = created_at_col()

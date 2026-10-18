@@ -5,15 +5,18 @@ from app.models import (
 )
 
 
-def _doctor_token(client):
-    client.post("/v1/auth/request-otp", json={"phone": "+918000000001"})
-    r = client.post("/v1/auth/verify-otp",
-                    json={"phone": "+918000000001", "code": "123456", "role": "doctor", "name": "Dr Q"})
+def _doctor_token(client, db):
+    # Providers are server-provisioned, then authenticate via OTP (unique phone per run).
+    phone = f"+91{uuid.uuid4().int % 10**10:010d}"
+    db.add(User(id=uuid.uuid4(), phone=phone, role=Role.doctor, name="Dr Q"))
+    db.commit()
+    client.post("/v1/auth/request-otp", json={"phone": phone})
+    r = client.post("/v1/auth/verify-otp", json={"phone": phone, "code": "123456"})
     return r.json()["accessToken"], r.json()["userId"]
 
 
 def test_queue_sorted_emergency_first(client, db):
-    token, doctor_id = _doctor_token(client)
+    token, doctor_id = _doctor_token(client, db)
     pid = uuid.uuid4()
     db.add(User(id=pid, phone=f"+91{uuid.uuid4().int % 10**10:010d}", role=Role.patient, name="P"))
     db.flush()

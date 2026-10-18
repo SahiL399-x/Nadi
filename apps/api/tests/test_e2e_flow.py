@@ -1,12 +1,23 @@
 import uuid
 
-from app.models import Patient, User
+from app.models import Role, User
 
 
-def _token(client, phone, role, name):
+def _login(client, phone, name):
+    """Patient self-signup: verify_otp creates the patient (and its profile row)."""
     client.post("/v1/auth/request-otp", json={"phone": phone})
     r = client.post("/v1/auth/verify-otp",
-                    json={"phone": phone, "code": "123456", "role": role, "name": name})
+                    json={"phone": phone, "code": "123456", "name": name})
+    return r.json()["accessToken"], r.json()["userId"]
+
+
+def _provision_and_login(client, db, phone, role, name):
+    """Providers are server-provisioned (seed/admin), then log in via OTP."""
+    db.add(User(id=uuid.uuid4(), phone=phone, role=role, name=name))
+    db.commit()
+    client.post("/v1/auth/request-otp", json={"phone": phone})
+    r = client.post("/v1/auth/verify-otp",
+                    json={"phone": phone, "code": "123456", "name": name})
     return r.json()["accessToken"], r.json()["userId"]
 
 
@@ -29,11 +40,9 @@ def test_full_patient_doctor_pharmacy_loop(client, db, monkeypatch):
     doctor_phone = f"+91{uuid.uuid4().int % 10**10:010d}"
     pharmacy_phone = f"+91{uuid.uuid4().int % 10**10:010d}"
 
-    pt, patient_id = _token(client, patient_phone, "patient", "E2E Patient")
-    db.add(Patient(user_id=uuid.UUID(patient_id), age=40, sex="M"))
-    db.commit()
-    dt, doctor_id = _token(client, doctor_phone, "doctor", "E2E Doctor")
-    pht, pharmacy_id = _token(client, pharmacy_phone, "pharmacy", "E2E Pharmacy")
+    pt, patient_id = _login(client, patient_phone, "E2E Patient")
+    dt, doctor_id = _provision_and_login(client, db, doctor_phone, Role.doctor, "E2E Doctor")
+    pht, pharmacy_id = _provision_and_login(client, db, pharmacy_phone, Role.pharmacy, "E2E Pharmacy")
     ph = {"Authorization": f"Bearer {pt}"}
     dh = {"Authorization": f"Bearer {dt}"}
     phh = {"Authorization": f"Bearer {pht}"}
@@ -43,6 +52,14 @@ def test_full_patient_doctor_pharmacy_loop(client, db, monkeypatch):
                             "age": 40, "sex": "M", "lang": "en"}, headers=ph).json()["consultationId"]
     client.post(f"/v1/consultations/{cid}/book",
                 json={"doctorId": doctor_id, "slot": "10:00"}, headers=ph)
+
+    # A real (non-seeded) patient must appear in the doctor's queue, with the
+    # age/sex carried from intake — this is the cross-device demo scenario.
+    queue = client.get("/v1/doctor/queue", headers=dh).json()
+    mine = [i for i in queue if i["id"] == cid]
+    assert mine and mine[0]["patientName"] == "E2E Patient"
+    assert mine[0]["patientAge"] == 40 and mine[0]["patientSex"] == "M"
+
     pres_id = client.post(f"/v1/doctor/consultations/{cid}/prescribe",
                           json={"lines": [{"drug": "Iron", "strength": "100mg",
                                            "frequency": "OD", "durationDays": 30}]},
