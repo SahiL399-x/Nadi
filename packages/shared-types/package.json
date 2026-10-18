@@ -1,0 +1,9 @@
+{
+  "name": "@nadi/shared-types",
+  "version": "0.1.0",
+  "types": "src/types.ts",
+  "scripts": {
+    "gen": "openapi-typescript http://localhost:8000/openapi.json -o src/types.ts"
+  },
+  "devDependencies": { "openapi-typescript": "^7" }
+}

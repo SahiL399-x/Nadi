@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: nadi
+      POSTGRES_PASSWORD: nadi
+      POSTGRES_DB: nadi
+    ports: ["5433:5432"]
+    volumes: ["nadi_db:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nadi"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: nadi
+      MINIO_ROOT_PASSWORD: nadi12345
+    ports: ["9000:9000", "9001:9001"]
+    volumes: ["nadi_minio:/data"]
+  ml-service:
+    build: ../apps/ml-service
+    ports: ["8001:8001"]
+  api:
+    build: ../apps/api
+    depends_on:
+      db: {condition: service_healthy}
+    environment:
+      DATABASE_URL: postgresql+psycopg://nadi:nadi@db:5432/nadi
+      ML_SERVICE_URL: http://ml-service:8001
+      S3_ENDPOINT: http://minio:9000
+    ports: ["8000:8000"]
+volumes:
+  nadi_db:
+  nadi_minio:
