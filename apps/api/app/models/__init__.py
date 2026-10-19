@@ -1,6 +1,7 @@
 from app.models.audit import AuditLog
 from app.models.base import Base
 from app.models.consultation import Consultation, ConsultationStatus, Flag, LabValue, Report
+from app.models.medicine import Medicine
 from app.models.prescription import (
     OfferStatus,
     PharmacyConsent,
@@ -17,5 +18,5 @@ __all__ = [
     "Consultation", "ConsultationStatus", "Report", "LabValue", "Flag",
     "TriageResult", "Referral", "Acuity",
     "Prescription", "PrescriptionLine", "PharmacyConsent", "PharmacyOffer",
-    "PrescriptionStatus", "OfferStatus", "AuditLog",
+    "PrescriptionStatus", "OfferStatus", "AuditLog", "Medicine",
 ]

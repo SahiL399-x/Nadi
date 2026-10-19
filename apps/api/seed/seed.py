@@ -7,7 +7,7 @@ from sqlalchemy import select
 
 from app.core.db import SessionLocal
 from app.models import (
-    Consultation, ConsultationStatus, Doctor, Patient, Pharmacy, Role, TriageResult, User,
+    Consultation, ConsultationStatus, Doctor, Medicine, Patient, Pharmacy, Role, TriageResult, User,
 )
 
 HEADSHOTS = json.loads((pathlib.Path(__file__).parent / "doctor_headshots.json").read_text())
@@ -34,6 +34,29 @@ PHARMACIES = [
     ("Shree Medical Store", "MH-PH-1003", 19.9650, 73.8250, False, False),
     ("Panchavati Chemists", "MH-PH-1004", 20.0350, 73.7720, True, True),
     ("Trimurti Pharma", "MH-PH-1005", 19.9450, 73.7650, False, True),
+]
+
+MEDICINES = [
+    ("Paracetamol", "500mg", "tablet"), ("Paracetamol", "650mg", "tablet"),
+    ("Amoxicillin", "500mg", "capsule"), ("Azithromycin", "500mg", "tablet"),
+    ("Amlodipine", "5mg", "tablet"), ("Metformin", "500mg", "tablet"),
+    ("Pantoprazole", "40mg", "tablet"), ("Cetirizine", "10mg", "tablet"),
+    ("Ibuprofen", "400mg", "tablet"), ("Omeprazole", "20mg", "capsule"),
+    ("Atorvastatin", "10mg", "tablet"), ("Telmisartan", "40mg", "tablet"),
+    ("Montelukast", "10mg", "tablet"), ("Levocetirizine", "5mg", "tablet"),
+    ("Dolo", "650mg", "tablet"), ("Augmentin", "625mg", "tablet"),
+    ("Pantocid", "40mg", "tablet"), ("Shelcal", "500mg", "tablet"),
+    ("Thyronorm", "50mcg", "tablet"), ("Glimepiride", "1mg", "tablet"),
+    ("Losartan", "50mg", "tablet"), ("Rosuvastatin", "10mg", "tablet"),
+    ("Clopidogrel", "75mg", "tablet"), ("Aspirin", "75mg", "tablet"),
+    ("Metoprolol", "25mg", "tablet"), ("Ramipril", "5mg", "capsule"),
+    ("Cefixime", "200mg", "tablet"), ("Ofloxacin", "200mg", "tablet"),
+    ("Domperidone", "10mg", "tablet"), ("Ondansetron", "4mg", "tablet"),
+    ("Prednisolone", "10mg", "tablet"), ("Salbutamol", "100mcg", "inhaler"),
+    ("Insulin", "100IU", "injection"), ("Cough Syrup", "100ml", "syrup"),
+    ("ORS", "21.8g", "sachet"), ("Vitamin D3", "60000IU", "sachet"),
+    ("B-Complex", "", "capsule"), ("Iron Folic Acid", "", "tablet"),
+    ("Calcium", "500mg", "tablet"), ("Zincovit", "", "tablet"),
 ]
 
 QUEUE = [
@@ -99,6 +122,10 @@ def run(db) -> None:
                             drivers=[{"feature": "symptom", "contribution": 0.5}],
                             red_flags=["chest pain with breathlessness"] if acuity == "EMERGENCY" else [],
                             model_version="stub-keyword-v0"))
+
+    for name, strength, form in MEDICINES:
+        db.add(Medicine(name=name, strength=strength, form=form, is_common=True))
+
     db.commit()
 
 
