@@ -4,6 +4,7 @@ Revision ID: 0003_medicines
 Revises: 0002_labs_and_constraints
 Create Date: 2026-10-19
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa

@@ -11,6 +11,7 @@ router = APIRouter(prefix="/v1/medicines", tags=["medicines"])
 
 
 @router.get("", response_model=list[MedicineOut])
-def search(q: str | None = None, _: User = Depends(require_role("doctor")),
-           db: Session = Depends(get_db)) -> list[MedicineOut]:
+def search(
+    q: str | None = None, _: User = Depends(require_role("doctor")), db: Session = Depends(get_db)
+) -> list[MedicineOut]:
     return medicine_service.search(db, q)
