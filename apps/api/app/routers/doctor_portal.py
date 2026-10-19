@@ -8,12 +8,14 @@ from app.core.deps import require_role
 from app.models import User
 from app.schemas.appointment import AppointmentOut
 from app.schemas.consultation import QueueItemOut
+from app.schemas.doctor_lists import DoctorPrescriptionOut, LabReportOut
 from app.schemas.patient_profile import PatientProfileOut
 from app.schemas.prescription import PrescribeIn, ReferIn
 from app.schemas.stats import DoctorStatsOut
 from app.services import (
     audit_service,
     consultation_service,
+    lab_report_service,
     patient_service,
     prescription_service,
     stats_service,
@@ -55,6 +57,24 @@ def patient_profile(
     if out is None:
         raise HTTPException(status_code=404, detail="not found")
     return out
+
+
+@router.get("/prescriptions", response_model=list[DoctorPrescriptionOut])
+def doctor_prescriptions(
+    status: str | None = None,
+    user: User = Depends(require_role("doctor")),
+    db: Session = Depends(get_db),
+):
+    return prescription_service.list_for_doctor(db, user.id, status)
+
+
+@router.get("/lab-reports", response_model=list[LabReportOut])
+def doctor_lab_reports(
+    status: str | None = None,
+    user: User = Depends(require_role("doctor")),
+    db: Session = Depends(get_db),
+):
+    return lab_report_service.list_for_doctor(db, user.id, status)
 
 
 @router.post("/consultations/{consultation_id}/refer")

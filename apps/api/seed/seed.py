@@ -20,6 +20,7 @@ from app.models import (
     PharmacyOffer,
     Prescription,
     PrescriptionLine,
+    Report,
     Role,
     TriageResult,
     User,
@@ -439,6 +440,19 @@ def run(db) -> None:
                     frequency=frequency,
                     duration_days=duration_days,
                     notes=None,
+                )
+            )
+
+    # lab reports for the demo doctor's first two completed visits — one
+    # finished (Completed) and one still processing (Pending) for the demo.
+    for i, cid in enumerate(done_cids):
+        if i < 2:
+            db.add(
+                Report(
+                    id=uuid.uuid4(),
+                    consultation_id=cid,
+                    object_key=f"reports/seed-{i}.webp",
+                    ocr_status="done" if i == 0 else "pending",
                 )
             )
 
