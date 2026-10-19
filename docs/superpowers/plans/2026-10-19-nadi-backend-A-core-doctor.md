@@ -366,10 +366,9 @@ class AppointmentOut(BaseModel):
 def status_label(raw: str) -> str:
     return _STATUS_LABEL.get(raw, raw.title())
 ```
-In `apps/api/app/services/consultation_service.py` add (imports: `from datetime import date, datetime`, `TriageResult` already imported):
+In `apps/api/app/services/consultation_service.py` add module-level imports `from datetime import date, datetime`, `from app.schemas.appointment import AppointmentOut, status_label` (`TriageResult` already imported), then:
 ```python
 def doctor_appointments(db: Session, doctor_id, on: date | None) -> list[AppointmentOut]:
-    from app.schemas.appointment import AppointmentOut, status_label
     stmt = (select(Consultation, User, Patient, TriageResult)
             .join(User, User.id == Consultation.patient_id)
             .outerjoin(Patient, Patient.user_id == Consultation.patient_id)
