@@ -22,10 +22,13 @@ def add(db: Session, consultation_id, author_id, text: str) -> ConsultationNote:
     return note
 
 
-def list_for(db: Session, consultation_id) -> list[NoteOut]:
+def list_for(db: Session, consultation_id, author_id) -> list[NoteOut]:
+    # Notes are a private notebook per participant: each side (patient, doctor)
+    # sees only their own notes, never the other party's.
     rows = db.scalars(
         select(ConsultationNote)
         .where(ConsultationNote.consultation_id == consultation_id)
+        .where(ConsultationNote.author_id == author_id)
         .order_by(ConsultationNote.created_at.asc())
     ).all()
     return [NoteOut(id=str(n.id), text=n.text, createdAt=str(n.created_at)) for n in rows]

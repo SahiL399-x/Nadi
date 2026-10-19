@@ -74,4 +74,4 @@ def list_notes(
 ):
     if not note_service.can_access(db, consultation_id, user):
         raise HTTPException(status_code=404, detail="not found")
-    return note_service.list_for(db, consultation_id)
+    return note_service.list_for(db, consultation_id, user.id)
