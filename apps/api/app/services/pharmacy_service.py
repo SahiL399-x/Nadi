@@ -126,6 +126,33 @@ def accept(db: Session, offer_id, pharmacy_id) -> bool:
     return True
 
 
+_ALLOWED: dict[str, set[str]] = {
+    "PENDING": {"TO_VERIFY", "VERIFIED", "PREPARING", "CANCELLED"},
+    "TO_VERIFY": {"VERIFIED", "PREPARING", "CANCELLED"},
+    "VERIFIED": {"PREPARING", "CANCELLED"},
+    "PREPARING": {"OUT_FOR_DELIVERY", "CANCELLED"},
+    "OUT_FOR_DELIVERY": {"DELIVERED", "CANCELLED"},
+    "DELIVERED": {"COMPLETED"},
+    "COMPLETED": set(),
+    "CANCELLED": set(),
+    "DECLINED": set(),
+    "ACCEPTED": {"PREPARING", "CANCELLED"},
+}
+
+
+def set_status(db: Session, offer_id, pharmacy_id, new_status: str) -> tuple[bool, bool]:
+    """Returns (found, allowed)."""
+    offer = _owned_offer(db, offer_id, pharmacy_id)
+    if offer is None:
+        return (False, False)
+    target = new_status.upper()
+    if target not in _ALLOWED.get(offer.status.value, set()):
+        return (True, False)
+    offer.status = OfferStatus(target)
+    db.commit()
+    return (True, True)
+
+
 def _demo_total(lines: list) -> int:
     # Deterministic demo figure — no pricing engine exists. Stable per line set.
     return sum(40 + 10 * ln.duration_days for ln in lines)

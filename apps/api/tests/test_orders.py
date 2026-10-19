@@ -20,3 +20,24 @@ def test_orders_invalid_status_no_500(client, pharmacy_token):
     r = client.get("/v1/pharmacy/orders", headers=h, params={"status": "bogus"})
     assert r.status_code == 200
     assert r.json() == []
+
+
+def _first_order_in(client, h, status):
+    rows = client.get("/v1/pharmacy/orders", params={"status": status}, headers=h).json()
+    return rows[0]["id"] if rows else None
+
+
+def test_advance_order_status(client, pharmacy_token):
+    h = {"Authorization": f"Bearer {pharmacy_token}"}
+    oid = _first_order_in(client, h, "pending")
+    assert oid
+    r = client.post(f"/v1/pharmacy/orders/{oid}/status", json={"status": "PREPARING"}, headers=h)
+    assert r.status_code == 200 and r.json()["status"] == "PREPARING"
+
+
+def test_illegal_transition_rejected(client, pharmacy_token):
+    h = {"Authorization": f"Bearer {pharmacy_token}"}
+    oid = _first_order_in(client, h, "delivered")
+    if oid:
+        r = client.post(f"/v1/pharmacy/orders/{oid}/status", json={"status": "PENDING"}, headers=h)
+        assert r.status_code == 400
