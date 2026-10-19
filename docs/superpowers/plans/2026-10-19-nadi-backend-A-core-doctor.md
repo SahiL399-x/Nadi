@@ -30,7 +30,7 @@
 ### Task 1: ADR-0005, doctor test fixture, Medicine catalog + search
 
 **Files:**
-- Create: `docs/adr/0005-v2-contract-doctor-pharmacy.md`
+- Create: `docs/decisions/ADR-0005-v2-contract-doctor-pharmacy.md` (repo ADRs live in `docs/decisions/`, named `ADR-000N-*`)
 - Create: `apps/api/app/models/medicine.py`
 - Modify: `apps/api/app/models/__init__.py`
 - Create: `apps/api/migrations/versions/0003_medicines.py`
@@ -47,7 +47,7 @@
 
 - [ ] **Step 1: Write ADR-0005**
 
-Create `docs/adr/0005-v2-contract-doctor-pharmacy.md`:
+Create `docs/decisions/ADR-0005-v2-contract-doctor-pharmacy.md`:
 ```markdown
 # ADR-0005: v2 API contract — doctor/pharmacy portal endpoints
 

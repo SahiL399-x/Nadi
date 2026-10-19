@@ -135,7 +135,7 @@ git commit -m "implement get consultation detail endpoint"
 The patient must choose their own pharmacy from a list (ProjectPlan §11, Telemedicine Guidelines 2020), but no pharmacy-list endpoint exists in the frozen §9 contract. This is an additive contract change → **record ADR-0004**.
 
 **Files:**
-- Create: `docs/adr/0004-add-pharmacies-list-endpoint.md`
+- Create: `docs/decisions/ADR-0004-add-pharmacies-list-endpoint.md`
 - Modify: `apps/api/app/services/pharmacy_service.py`
 - Create: `apps/api/app/routers/pharmacies.py` route (extend existing file)
 - Modify: `apps/api/tests/test_pharmacies.py`
@@ -145,7 +145,7 @@ The patient must choose their own pharmacy from a list (ProjectPlan §11, Teleme
 
 - [ ] **Step 1: Record the ADR**
 
-Create `docs/adr/0004-add-pharmacies-list-endpoint.md`:
+Create `docs/decisions/ADR-0004-add-pharmacies-list-endpoint.md`:
 
 ```markdown
 # ADR-0004: Add GET /v1/pharmacies
@@ -245,7 +245,7 @@ Expected: PASS.
 
 Run (API up): `cd packages/shared-types && npm run gen` (adds `Pharmacy` + the new path).
 ```bash
-git add apps/api docs/adr/0004-add-pharmacies-list-endpoint.md packages/shared-types/src/types.ts
+git add apps/api docs/decisions/ADR-0004-add-pharmacies-list-endpoint.md packages/shared-types/src/types.ts
 git commit -m "add pharmacies list endpoint"
 ```
 
