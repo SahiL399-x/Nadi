@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import Consultation, ConsultationStatus, Patient, Report, TriageResult, User
+from app.schemas.appointment import AppointmentOut, status_label
 from app.schemas.common import TriageInput, TriageResultOut
 from app.schemas.consultation import QueueItemOut
 from app.services import ml_client
@@ -136,9 +137,7 @@ def doctor_queue(db: Session, doctor_id) -> list[QueueItemOut]:
     return items
 
 
-def doctor_appointments(db: Session, doctor_id, on: date | None) -> list:
-    from app.schemas.appointment import AppointmentOut, status_label
-
+def doctor_appointments(db: Session, doctor_id, on: date | None) -> list[AppointmentOut]:
     stmt = (
         select(Consultation, User, Patient, TriageResult)
         .join(User, User.id == Consultation.patient_id)
