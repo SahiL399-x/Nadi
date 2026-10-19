@@ -140,13 +140,22 @@ def orders(db: Session, pharmacy_id, status: str | None) -> list[OrderOut]:
         .where(PharmacyOffer.pharmacy_id == pharmacy_id)
     )
     if status and status != "all":
-        stmt = stmt.where(PharmacyOffer.status == OfferStatus(status.upper()))
+        try:
+            offer_status = OfferStatus(status.upper())
+        except ValueError:
+            return []
+        stmt = stmt.where(PharmacyOffer.status == offer_status)
     rows = db.execute(stmt).all()
+    pres_ids = [pres.id for _, pres, _ in rows]
+    lines_by_pres: dict = {}
+    if pres_ids:
+        for ln in db.scalars(
+            select(PrescriptionLine).where(PrescriptionLine.prescription_id.in_(pres_ids))
+        ):
+            lines_by_pres.setdefault(ln.prescription_id, []).append(ln)
     out: list[OrderOut] = []
     for offer, pres, patient in rows:
-        lines = list(
-            db.scalars(select(PrescriptionLine).where(PrescriptionLine.prescription_id == pres.id))
-        )
+        lines = lines_by_pres.get(pres.id, [])
         out.append(
             OrderOut(
                 id=str(offer.id),

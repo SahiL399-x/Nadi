@@ -12,3 +12,11 @@ def test_orders_board_returns_seeded_orders(client, pharmacy_token):
         rows[0].keys()
     )
     assert all(o["orderNo"].startswith("NP") for o in rows)
+    assert any(o["itemsCount"] >= 1 for o in rows)
+
+
+def test_orders_invalid_status_no_500(client, pharmacy_token):
+    h = {"Authorization": f"Bearer {pharmacy_token}"}
+    r = client.get("/v1/pharmacy/orders", headers=h, params={"status": "bogus"})
+    assert r.status_code == 200
+    assert r.json() == []
