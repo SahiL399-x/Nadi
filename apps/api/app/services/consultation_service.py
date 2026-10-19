@@ -1,9 +1,11 @@
 import uuid
+from datetime import date
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import Consultation, ConsultationStatus, Patient, Report, TriageResult, User
+from app.schemas.appointment import AppointmentOut, status_label
 from app.schemas.common import TriageInput, TriageResultOut
 from app.schemas.consultation import QueueItemOut
 from app.services import ml_client
@@ -24,8 +26,10 @@ def intake(db: Session, patient_id, inp: TriageInput) -> Consultation:
         patient.sex = inp.sex
 
     consult = Consultation(
-        id=uuid.uuid4(), patient_id=patient_id,
-        status=ConsultationStatus.PENDING, symptom_text_raw=inp.symptomText,
+        id=uuid.uuid4(),
+        patient_id=patient_id,
+        status=ConsultationStatus.PENDING,
+        symptom_text_raw=inp.symptomText,
     )
     db.add(consult)
     db.flush()
@@ -34,14 +38,25 @@ def intake(db: Session, patient_id, inp: TriageInput) -> Consultation:
     for i, object_key in enumerate(inp.reportImageUris):
         # Use the key the client actually uploaded to (from /v1/uploads/sign)
         # rather than fabricating one, so the real report drives extraction.
-        db.add(Report(id=uuid.uuid4(), consultation_id=consult.id,
-                      object_key=object_key, ocr_status="done"))
+        db.add(
+            Report(
+                id=uuid.uuid4(),
+                consultation_id=consult.id,
+                object_key=object_key,
+                ocr_status="done",
+            )
+        )
         labs.extend(ml_client.document(object_key))
 
     try:
         result = ml_client.triage(
-            {"symptomText": inp.symptomText, "labs": labs,
-             "age": inp.age, "sex": inp.sex, "lang": inp.lang}
+            {
+                "symptomText": inp.symptomText,
+                "labs": labs,
+                "age": inp.age,
+                "sex": inp.sex,
+                "lang": inp.lang,
+            }
         )
     except Exception:
         # Don't leave a half-built transaction open across a failed network call.
@@ -49,11 +64,15 @@ def intake(db: Session, patient_id, inp: TriageInput) -> Consultation:
         raise
     db.add(
         TriageResult(
-            id=uuid.uuid4(), consultation_id=consult.id,
-            acuity=result["acuity"], acuity_confidence=result["acuityConfidence"],
-            specialties=result["specialties"], drivers=result["drivers"],
+            id=uuid.uuid4(),
+            consultation_id=consult.id,
+            acuity=result["acuity"],
+            acuity_confidence=result["acuityConfidence"],
+            specialties=result["specialties"],
+            drivers=result["drivers"],
             labs=result.get("labs", []),
-            red_flags=result["redFlags"], model_version=result["modelVersion"],
+            red_flags=result["redFlags"],
+            model_version=result["modelVersion"],
         )
     )
     consult.status = ConsultationStatus.TRIAGED
@@ -72,9 +91,7 @@ def get_owned(db: Session, consultation_id, patient_id) -> Consultation | None:
 
 
 def get_triage(db: Session, consultation_id) -> TriageResult | None:
-    return db.scalar(
-        select(TriageResult).where(TriageResult.consultation_id == consultation_id)
-    )
+    return db.scalar(select(TriageResult).where(TriageResult.consultation_id == consultation_id))
 
 
 def book(db: Session, consult: Consultation, doctor_id, slot: str) -> Consultation:
@@ -105,10 +122,12 @@ def doctor_queue(db: Session, doctor_id) -> list[QueueItemOut]:
     ).all()
     items = [
         QueueItemOut(
-            id=str(consult.id), patientName=patient_user.name,
+            id=str(consult.id),
+            patientName=patient_user.name,
             patientAge=(patient.age if patient and patient.age is not None else 0),
             patientSex=(patient.sex if patient and patient.sex else "O"),
-            acuity=tr.acuity.value, complaint=consult.symptom_text_raw,
+            acuity=tr.acuity.value,
+            complaint=consult.symptom_text_raw,
             bookedFor=consult.booked_for or "",
             triage=TriageResultOut.from_model(tr),
         )
@@ -116,3 +135,44 @@ def doctor_queue(db: Session, doctor_id) -> list[QueueItemOut]:
     ]
     items.sort(key=lambda i: _ACUITY_ORDER[i.acuity])
     return items
+
+
+def doctor_appointments(db: Session, doctor_id, on: date | None) -> list[AppointmentOut]:
+    stmt = (
+        select(Consultation, User, Patient, TriageResult)
+        .join(User, User.id == Consultation.patient_id)
+        .outerjoin(Patient, Patient.user_id == Consultation.patient_id)
+        .outerjoin(TriageResult, TriageResult.consultation_id == Consultation.id)
+        .where(Consultation.doctor_id == doctor_id)
+        .where(
+            Consultation.status.in_(
+                [
+                    ConsultationStatus.BOOKED,
+                    ConsultationStatus.ARRIVED,
+                    ConsultationStatus.IN_PROGRESS,
+                    ConsultationStatus.DONE,
+                ]
+            )
+        )
+    )
+    rows = db.execute(stmt).all()
+    out = []
+    for c, user, patient, tr in rows:
+        when = c.scheduled_at
+        if on is not None and (when is None or when.date() != on):
+            continue
+        out.append(
+            AppointmentOut(
+                id=str(c.id),
+                patientName=user.name,
+                patientAge=(patient.age if patient and patient.age is not None else 0),
+                patientSex=(patient.sex if patient and patient.sex else "O"),
+                photoUrl="",
+                time=(when.strftime("%H:%M") if when else (c.booked_for or "")),
+                status=status_label(c.status.value),
+                acuity=(tr.acuity.value if tr else None),
+                complaint=c.symptom_text_raw,
+            )
+        )
+    out.sort(key=lambda a: a.time)
+    return out

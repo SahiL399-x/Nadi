@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Enum, Float, ForeignKey, String
+from sqlalchemy import DateTime, Enum, Float, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, created_at_col, uuid_pk
@@ -12,6 +12,7 @@ class ConsultationStatus(str, enum.Enum):
     PENDING = "PENDING"
     TRIAGED = "TRIAGED"
     BOOKED = "BOOKED"
+    ARRIVED = "ARRIVED"
     IN_PROGRESS = "IN_PROGRESS"
     DONE = "DONE"
 
@@ -32,6 +33,7 @@ class Consultation(Base):
         default=ConsultationStatus.PENDING,
     )
     booked_for: Mapped[str | None] = mapped_column(String, nullable=True)
+    scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     symptom_text_raw: Mapped[str] = mapped_column(String, default="")
     symptom_text_normalised: Mapped[str] = mapped_column(String, default="")
     created_at: Mapped[datetime] = created_at_col()

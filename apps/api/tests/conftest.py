@@ -24,6 +24,26 @@ def patient_token(client) -> str:
     client.post("/v1/auth/request-otp", json={"phone": "+919999900001"})
     r = client.post(
         "/v1/auth/verify-otp",
-        json={"phone": "+919999900001", "code": "123456", "role": "patient", "name": "Test Patient"},
+        json={
+            "phone": "+919999900001",
+            "code": "123456",
+            "role": "patient",
+            "name": "Test Patient",
+        },
     )
+    return r.json()["accessToken"]
+
+
+@pytest.fixture
+def doctor_token(client) -> str:
+    # The seeded demo doctor owns the queue/appointments.
+    client.post("/v1/auth/request-otp", json={"phone": "+915000000001"})
+    r = client.post("/v1/auth/verify-otp", json={"phone": "+915000000001", "code": "123456"})
+    return r.json()["accessToken"]
+
+
+@pytest.fixture
+def pharmacy_token(client) -> str:
+    client.post("/v1/auth/request-otp", json={"phone": "+915000020000"})
+    r = client.post("/v1/auth/verify-otp", json={"phone": "+915000020000", "code": "123456"})
     return r.json()["accessToken"]
