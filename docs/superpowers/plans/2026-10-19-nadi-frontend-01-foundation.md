@@ -1163,7 +1163,8 @@ git commit -m "add ui primitives"
 **Files:**
 - Create: `apps/mobile/src/api/auth.ts`
 - Create: `apps/mobile/app/(auth)/phone.tsx`, `apps/mobile/app/(auth)/otp.tsx`
-- Create: `apps/mobile/app/(patient)/_layout.tsx`, `apps/mobile/app/(doctor)/_layout.tsx`, `apps/mobile/app/(pharmacy)/_layout.tsx`
+- Create: `apps/mobile/app/(patient)/_layout.tsx`, `apps/mobile/app/(patient)/(tabs)/_layout.tsx`, `apps/mobile/app/(patient)/(tabs)/index.tsx`, `apps/mobile/app/(patient)/(tabs)/account.tsx`
+- Create: `apps/mobile/app/(doctor)/_layout.tsx`, `apps/mobile/app/(doctor)/index.tsx`, `apps/mobile/app/(pharmacy)/_layout.tsx`, `apps/mobile/app/(pharmacy)/index.tsx`
 - Create: `apps/mobile/src/providers/ThemeProvider.tsx`
 - Modify: `apps/mobile/app/index.tsx` (launch gate)
 - Test: `apps/mobile/src/api/__tests__/auth.test.ts`
@@ -1316,15 +1317,15 @@ export function ThemeProvider({ role, children }: { role: Role; children: React.
 }
 ```
 
-Each role layout wraps its stack in the themed provider. `apps/mobile/app/(patient)/_layout.tsx`:
+**Doctor & pharmacy** are single-stack portals. `apps/mobile/app/(doctor)/_layout.tsx`:
 ```tsx
 import { Stack } from 'expo-router';
 import { ThemeProvider } from '@/providers/ThemeProvider';
-export default function PatientLayout() {
-  return <ThemeProvider role="patient"><Stack screenOptions={{ headerShown: false }} /></ThemeProvider>;
+export default function DoctorLayout() {
+  return <ThemeProvider role="doctor"><Stack screenOptions={{ headerShown: false }} /></ThemeProvider>;
 }
 ```
-`(doctor)/_layout.tsx` and `(pharmacy)/_layout.tsx` are identical with `role="doctor"` / `role="pharmacy"`. Add a placeholder `index.tsx` in each group:
+`(pharmacy)/_layout.tsx` is identical with `role="pharmacy"`. Add a placeholder `(doctor)/index.tsx` and `(pharmacy)/index.tsx`:
 ```tsx
 import { Text, View } from 'react-native';
 import { useTheme } from '@/providers/ThemeProvider';
@@ -1333,6 +1334,63 @@ export default function Home() {
   return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
     <Text style={{ color: theme.primary, fontSize: 24, fontWeight: '700' }}>Portal</Text>
   </View>;
+}
+```
+
+**Patient** uses bottom tabs, with the multi-step flows pushed as a stack over the tabs. `apps/mobile/app/(patient)/_layout.tsx` is a themed Stack so flow screens push over the tab bar:
+```tsx
+import { Stack } from 'expo-router';
+import { ThemeProvider } from '@/providers/ThemeProvider';
+export default function PatientLayout() {
+  return (
+    <ThemeProvider role="patient">
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+      </Stack>
+    </ThemeProvider>
+  );
+}
+```
+`apps/mobile/app/(patient)/(tabs)/_layout.tsx` — Home + Account (a history tab is deferred, needs a backend list endpoint):
+```tsx
+import { Tabs } from 'expo-router';
+import { useTheme } from '@/providers/ThemeProvider';
+export default function PatientTabs() {
+  const theme = useTheme();
+  return (
+    <Tabs screenOptions={{ headerShown: false, tabBarActiveTintColor: theme.primary }}>
+      <Tabs.Screen name="index" options={{ title: 'Home' }} />
+      <Tabs.Screen name="account" options={{ title: 'Account' }} />
+    </Tabs>
+  );
+}
+```
+Placeholder `apps/mobile/app/(patient)/(tabs)/index.tsx` (the real home lands here in Plan 02 Task 6):
+```tsx
+import { Text, View } from 'react-native';
+import { useTheme } from '@/providers/ThemeProvider';
+export default function Home() {
+  const theme = useTheme();
+  return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+    <Text style={{ color: theme.primary, fontSize: 24, fontWeight: '700' }}>Home</Text>
+  </View>;
+}
+```
+`apps/mobile/app/(patient)/(tabs)/account.tsx` — shows the signed-in user and a sign-out:
+```tsx
+import { Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { Button } from '@/components/ui';
+import { useSession } from '@/store/session';
+import { colors, spacing, type as t } from '@/theme/tokens';
+export default function Account() {
+  const signOut = useSession((s) => s.signOut);
+  return (
+    <View style={{ flex: 1, padding: spacing.lg, gap: spacing.md, justifyContent: 'center' }}>
+      <Text style={{ fontSize: t.h2, color: colors.text, fontWeight: '700' }}>Account</Text>
+      <Button title="Sign out" variant="ghost" onPress={async () => { await signOut(); router.replace('/(auth)/phone'); }} />
+    </View>
+  );
 }
 ```
 

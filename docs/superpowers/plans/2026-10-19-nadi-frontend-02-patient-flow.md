@@ -393,7 +393,7 @@ git commit -m "restore session role on launch via refresh"
 
 **Interfaces:**
 - Consumes: `api`, schemas from Plan 01 Task 5.
-- Produces: `intake(input)`, `getTriage(id)`, `getConsultation(id)`, `searchDoctors(params)`, `getDoctor(id)`, `book(id, body)`, `getPrescription(id)`, `listPharmacies()`, `consent(prescriptionId, pharmacyIds)`, `signUpload()`.
+- Produces: `intake(input)`, `ensureConsultation(existingId, specialtyHint)`, `getTriage(id)`, `getConsultation(id)`, `searchDoctors(params)`, `getDoctor(id)`, `book(id, body)`, `getPrescription(id)`, `listPharmacies()`, `consent(prescriptionId, pharmacyIds)`, `signUpload()`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -463,6 +463,15 @@ export type IntakeInput = {
 
 export const intake = (input: IntakeInput) =>
   api.post('/v1/consultations/intake', input, IntakeResultSchema);
+
+// Direct-browse booking has no prior triage/consultation. Return the existing id if the
+// patient came via triage, else create one on-demand via a minimal intake so the booking
+// still produces a consultation the doctor sees in their queue.
+export const ensureConsultation = async (existingId: string | undefined, specialtyHint: string): Promise<string> => {
+  if (existingId) return existingId;
+  const r = await intake({ symptomText: `Direct booking: ${specialtyHint}`, reportImageUris: [], lang: 'en' });
+  return r.consultationId;
+};
 
 export const getTriage = (id: string) =>
   api.get(`/v1/consultations/${id}/triage`, TriageResponseSchema);
@@ -610,15 +619,19 @@ git commit -m "add report upload pipeline"
 
 ---
 
-### Task 6: Patient home (symptom intake)
+### Task 6: Patient home (symptom hero + speciality grid)
+
+The landing page (Practo-style, per the user's reference images) at the Home tab. Two entry paths: a **symptom hero** that starts the triage flow (NADI's core), and a **speciality grid** that goes straight to a filtered doctor list (direct browse, skips triage). Lives at the `(tabs)/index.tsx` route created in Plan 01.
 
 **Files:**
-- Create: `apps/mobile/app/(patient)/index.tsx`
+- Create: `apps/mobile/app/(patient)/(tabs)/index.tsx` (replaces the Plan 01 placeholder)
 - Create: `apps/mobile/src/features/patient/useIntake.ts`
-- Test: `apps/mobile/src/features/patient/__tests__/useIntake.test.ts`
+- Create: `apps/mobile/src/features/patient/specialties.ts`
+- Create: `apps/mobile/src/components/SpecialtyGrid.tsx`
+- Test: `apps/mobile/src/features/patient/__tests__/useIntake.test.ts`, `apps/mobile/src/features/patient/__tests__/specialties.test.ts`
 
 **Interfaces:**
-- Produces: `useIntake()` returning `{ submit(input), pending, error }`; home screen collects `symptomText`, a `lang` toggle (en/hi/mr), and a mic button (2 s listening animation then fills canned text — no real STT, spec §2), then navigates to Reports carrying the draft.
+- Produces: `useIntake()` returning `{ submit(input), pending, error }` (consumed by the Analyzing screen in Task 8); `SPECIALTIES` (display label → backend specialty string); `SpecialtyGrid({ onSelect })`; the home screen with the symptom hero (text + mic + lang toggle → Reports) and the speciality grid (tap → Doctors filtered, no triage).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -667,15 +680,72 @@ export function useIntake() {
 
 Run: `npm test -- useIntake` → PASS.
 
-- [ ] **Step 5: Build the home screen**
+- [ ] **Step 5: Speciality map + grid (failing test first)**
 
-`apps/mobile/app/(patient)/index.tsx` (keep under 150 lines; mic fills canned text):
+`apps/mobile/src/features/patient/__tests__/specialties.test.ts`:
+```ts
+import { SPECIALTIES } from '@/features/patient/specialties';
+test('maps display labels to backend specialty strings used in the seed', () => {
+  const byLabel = Object.fromEntries(SPECIALTIES.map((s) => [s.label, s.specialty]));
+  expect(byLabel["Women's Health"]).toBe('Gynaecology');
+  expect(byLabel['Skin Specialist']).toBe('Dermatology');
+  expect(byLabel['Heart']).toBe('Cardiology');
+});
+```
+Run: `npm test -- specialties` → FAIL. Then implement.
 
+`apps/mobile/src/features/patient/specialties.ts` (backend strings verified against `apps/api/seed/seed.py`):
+```ts
+import type { ComponentType } from 'react';
+import { Stethoscope, Baby, HeartPulse, Ear, Bone, Eye, Droplet, User } from 'lucide-react-native';
+
+export type Specialty = { label: string; specialty: string; Icon: ComponentType<{ size?: number; color?: string }> };
+
+export const SPECIALTIES: Specialty[] = [
+  { label: 'General Physician', specialty: 'General Physician', Icon: Stethoscope },
+  { label: "Women's Health", specialty: 'Gynaecology', Icon: User },
+  { label: 'Skin Specialist', specialty: 'Dermatology', Icon: Droplet },
+  { label: 'Child Care', specialty: 'Paediatrics', Icon: Baby },
+  { label: 'Heart', specialty: 'Cardiology', Icon: HeartPulse },
+  { label: 'Bone & Joint', specialty: 'Orthopaedics', Icon: Bone },
+  { label: 'Ear, Nose & Throat', specialty: 'ENT', Icon: Ear },
+  { label: 'Eye Specialist', specialty: 'General Physician', Icon: Eye },
+];
+```
+Install icons: `npx expo install lucide-react-native react-native-svg`.
+
+`apps/mobile/src/components/SpecialtyGrid.tsx`:
+```tsx
+import { Pressable, Text, View } from 'react-native';
+import { SPECIALTIES, type Specialty } from '@/features/patient/specialties';
+import { colors, radii, spacing, type as t } from '@/theme/tokens';
+
+export function SpecialtyGrid({ onSelect }: { onSelect: (s: Specialty) => void }) {
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+      {SPECIALTIES.map((s) => (
+        <Pressable key={s.label} onPress={() => onSelect(s)}
+          style={{ width: '47%', backgroundColor: colors.surface, borderRadius: radii.md,
+            borderWidth: 1, borderColor: colors.border, padding: spacing.md, gap: spacing.sm }}>
+          <s.Icon size={28} color={colors.seaGreen} />
+          <Text style={{ fontSize: t.sm, color: colors.text, fontWeight: '600' }}>{s.label}</Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+```
+Run: `npm test -- specialties` → PASS.
+
+- [ ] **Step 6: Build the home landing screen**
+
+`apps/mobile/app/(patient)/(tabs)/index.tsx` (symptom hero + speciality grid; keep under 150 lines):
 ```tsx
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { Button, Input } from '@/components/ui';
+import { Button, Card, Input } from '@/components/ui';
+import { SpecialtyGrid } from '@/components/SpecialtyGrid';
 import { useTheme } from '@/providers/ThemeProvider';
 import { colors, spacing, type as t } from '@/theme/tokens';
 
@@ -690,34 +760,43 @@ export default function PatientHome() {
   const theme = useTheme();
   const [text, setText] = useState('');
   const [lang, setLang] = useState<Lang>('en');
-  const next = () => router.push({ pathname: '/(patient)/reports', params: { symptomText: text, lang } });
+  const triage = () => router.push({ pathname: '/(patient)/reports', params: { symptomText: text, lang } });
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
-      <Text style={{ fontSize: t.h1, color: theme.primary, fontWeight: '700' }}>How are you feeling?</Text>
-      <Text style={{ fontSize: t.sm, color: colors.textMuted }}>Describe your symptoms in your own words.</Text>
-      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-        {(['en', 'hi', 'mr'] as Lang[]).map((l) => (
-          <Pressable key={l} onPress={() => setLang(l)} style={{ paddingVertical: 6, paddingHorizontal: 14,
-            borderRadius: 999, backgroundColor: lang === l ? theme.primary : colors.lightGrey }}>
-            <Text style={{ color: lang === l ? '#fff' : colors.text, fontSize: t.sm }}>{l.toUpperCase()}</Text>
-          </Pressable>
-        ))}
-      </View>
-      <Input value={text} onChangeText={setText} multiline placeholder="Type your symptoms…" />
-      <Button title="🎤 Speak instead" variant="ghost" color={theme.primary}
-        onPress={() => setTimeout(() => setText(CANNED[lang]), 2000)} />
-      <Button title="Continue" onPress={next} color={theme.primary} disabled={text.trim().length === 0} />
+    <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg }}>
+      <Text style={{ fontSize: t.h1, color: theme.primary, fontWeight: '800' }}>NADI</Text>
+      <Card>
+        <Text style={{ fontSize: t.h3, color: colors.text, fontWeight: '700' }}>Tell us your problem</Text>
+        <Text style={{ fontSize: t.sm, color: colors.textMuted, marginBottom: spacing.sm }}>We'll route you to the right doctor.</Text>
+        <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm }}>
+          {(['en', 'hi', 'mr'] as Lang[]).map((l) => (
+            <Pressable key={l} onPress={() => setLang(l)} style={{ paddingVertical: 6, paddingHorizontal: 14,
+              borderRadius: 999, backgroundColor: lang === l ? theme.primary : colors.lightGrey }}>
+              <Text style={{ color: lang === l ? '#fff' : colors.text, fontSize: t.sm }}>{l.toUpperCase()}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <Input value={text} onChangeText={setText} multiline placeholder="e.g. chest pain since morning…" />
+        <View style={{ height: spacing.sm }} />
+        <Button title="🎤 Speak instead" variant="ghost" color={theme.primary}
+          onPress={() => setTimeout(() => setText(CANNED[lang]), 2000)} />
+        <View style={{ height: spacing.sm }} />
+        <Button title="Find the right doctor" onPress={triage} color={theme.primary}
+          disabled={text.trim().length === 0} />
+      </Card>
+      <Text style={{ fontSize: t.h3, color: colors.text, fontWeight: '700' }}>Find doctors by speciality</Text>
+      <SpecialtyGrid onSelect={(s) => router.push({ pathname: '/(patient)/doctors', params: { specialty: s.specialty } })} />
     </ScrollView>
   );
 }
 ```
+Note: the speciality path pushes to Doctors with **no `id`** param → direct browse (Task 9 handles the optional id; booking creates a consultation on-demand via `ensureConsultation`, Task 11).
 
-- [ ] **Step 6: Run + commit**
+- [ ] **Step 7: Run + commit**
 
 Run: `npm test && npm run typecheck`
 ```bash
-git add apps/mobile/app/(patient)/index.tsx apps/mobile/src/features/patient
-git commit -m "add patient home intake screen"
+git add apps/mobile/app/(patient)/(tabs)/index.tsx apps/mobile/src/features/patient apps/mobile/src/components/SpecialtyGrid.tsx apps/mobile/package.json
+git commit -m "add patient home with symptom hero and speciality grid"
 ```
 
 ---
@@ -1137,7 +1216,7 @@ import { useDoctors } from '@/features/patient/useDoctors';
 import { colors, spacing, type as t } from '@/theme/tokens';
 
 export default function Doctors() {
-  const { id, specialty } = useLocalSearchParams<{ id: string; specialty: string }>();
+  const { id, specialty } = useLocalSearchParams<{ id?: string; specialty: string }>();
   const { data, isLoading, isError, refetch } = useDoctors(specialty || undefined);
   const [map, setMap] = useState(false);
   if (isLoading) return <View style={{ padding: spacing.lg, gap: spacing.sm }}>{[0, 1, 2].map((i) => <Skeleton key={i} height={96} />)}</View>;
@@ -1153,7 +1232,8 @@ export default function Doctors() {
             contentContainerStyle={{ padding: spacing.lg }}
             ListEmptyComponent={<EmptyState title="No doctors nearby" message="Try widening your search." />}
             renderItem={({ item }) => <DoctorCard doctor={item}
-              onPress={() => router.push({ pathname: '/(patient)/doctor/[did]', params: { did: item.id, id: id! } })} />} />}
+              onPress={() => router.push({ pathname: '/(patient)/doctor/[did]',
+                params: { did: item.id, ...(id ? { id } : {}) } })} />} />}
     </View>
   );
 }
@@ -1322,18 +1402,24 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Avatar, Button, Card, Skeleton } from '@/components/ui';
 import { useDoctor } from '@/features/patient/useDoctor';
 import { useBook } from '@/features/patient/useBook';
+import { ensureConsultation } from '@/api/patient';
 import { colors, spacing, type as t } from '@/theme/tokens';
 
 export default function DoctorDetail() {
-  const { did, id } = useLocalSearchParams<{ did: string; id: string }>();
+  const { did, id } = useLocalSearchParams<{ did: string; id?: string }>();
   const { data: d, isLoading } = useDoctor(did!);
   const { confirm, pending } = useBook();
   const [slot, setSlot] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   if (isLoading || !d) return <View style={{ padding: spacing.lg }}><Skeleton height={200} /></View>;
   const bookNow = async () => {
     if (!slot) return;
-    const ok = await confirm(id!, d.id, slot);
-    if (ok) router.replace({ pathname: '/(patient)/booked', params: { id: id!, slot, name: d.name } });
+    setBusy(true);
+    try {
+      const cid = await ensureConsultation(id, d.specialty); // existing id on triage path; created on direct browse
+      const ok = await confirm(cid, d.id, slot);
+      if (ok) router.replace({ pathname: '/(patient)/booked', params: { id: cid, slot, name: d.name } });
+    } finally { setBusy(false); }
   };
   return (
     <View style={{ flex: 1 }}>
@@ -1353,7 +1439,7 @@ export default function DoctorDetail() {
         </View>
       </ScrollView>
       <View style={{ padding: spacing.lg, borderTopWidth: 1, borderColor: colors.border }}>
-        <Button title={slot ? `Book ${slot}` : 'Select a slot'} onPress={bookNow} loading={pending} disabled={!slot} />
+        <Button title={slot ? `Book ${slot}` : 'Select a slot'} onPress={bookNow} loading={busy || pending} disabled={!slot || busy} />
       </View>
     </View>
   );

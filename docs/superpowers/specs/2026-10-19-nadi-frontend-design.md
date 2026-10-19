@@ -43,6 +43,8 @@ A single Expo / React Native app covering all three roles (patient, doctor, phar
 
 **Roles in one app:** after OTP verify, the app routes to the portal for the **backend-returned `role`** — patient / doctor / pharmacy. No client-side role choice, no switcher.
 
+**Patient navigation (Practo-style, per user reference images):** the patient app uses **bottom-tab navigation** — **Home** and **Account** for the demo (a "Consultations"/history tab is deferred — it needs a `list-my-consultations` backend endpoint that does not exist; out of scope). The multi-step flows (reports → analyzing → result → doctors → detail → book → consultation → prescription) are **pushed as a stack over the tabs**, not tabs themselves. Doctor and pharmacy portals stay single-stack (focused professional tools, no tabs).
+
 ---
 
 ## Section 2 — Screen inventory (approved)
@@ -52,12 +54,15 @@ Per ProjectPlan §13, built for all three roles together (not patient-first).
 **Auth (shared):** Phone-number entry (+91) → OTP entry (stub code `123456`). Patient self-signs-up (new phone → always patient, captures name). Doctor/pharmacy log in with seeded phone numbers (demo doctor `+915000000001`; seeded pharmacies `+9150000200xx`). Role comes from the backend, app routes accordingly.
 
 **Patient (green app):**
-- **Home** — symptom text field + mic button (mic = short listening animation then fills text; speech is canned for the demo), language toggle (en/hi/mr).
+- **Home (landing)** — two entry paths, modelled on the Practo reference:
+  1. **Symptom hero (NADI's core)** — a prominent card: symptom text field + mic (short listening animation then canned text) + language toggle (en/hi/mr) + a "Find the right doctor" action that starts the **triage path** (→ Reports → Analyzing → Result). This is NADI's "Ask AI" equivalent and leads the page.
+  2. **Find doctors by speciality** — a grid of speciality cards (icon + label: General Physician, Women's Health→Gynaecology, Skin→Dermatology, Child Care→Paediatrics, Heart→Cardiology, Bone & Joint→Orthopaedics, ENT, Blood→Haematology). Tapping a card is the **direct-browse path** → the Doctors list filtered to that specialty, **skipping triage**.
+  Speciality tiles use lucide icons/generated art (placeholder-fine per design refs), not sourced photos.
 - **Reports** — image picker grid. **Real upload** (not skippable-as-stub): selected images are uploaded for real; see §4 upload rules.
 - **Analyzing** — three fading status lines ("Reading your reports" → "Understanding your symptoms" → "Finding the right doctor") while polling triage.
 - **Result** — acuity badge + plain-language line, recommended specialty + 2 alternatives, "Why we think this" drivers card, lab table. If `redFlags` is non-empty, this screen is **replaced entirely** by a full-red emergency view with a call button and nothing else.
 - **Doctors** — filterable cards (specialty, distance, fee, rating, languages), distance shown as text; plus a **MapLibre map view** (toggle) with a pin per doctor using their lat/lng, centred on the patient (see §4). Both list and map are driven by the same `GET /v1/doctors` result.
-- **Doctor detail** — profile + stat tiles + date/time slot chips + sticky book bar.
+- **Doctor detail** — profile + stat tiles + date/time slot chips + sticky book bar. Booking needs a consultation: on the triage path one already exists; on the **direct-browse path** (no triage) a consultation is created on-demand at book time via a minimal intake (so the doctor still sees the booking in their queue).
 - **Booked** — confirmation.
 - **Consultation** — **real** jit.si room `meet.jit.si/nadi-{consultationId}` (join button).
 - **Prescription** — prescription lines + **mandatory** pharmacy consent multi-select; after consent, poll status (PENDING → ACCEPTED → DELIVERED).
