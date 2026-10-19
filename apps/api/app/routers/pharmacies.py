@@ -7,13 +7,19 @@ from app.core.deps import require_role
 from app.models import User
 from app.schemas.order import OrderOut
 from app.schemas.pharmacy import OfferOut
-from app.services import audit_service, pharmacy_service
+from app.schemas.stats import PharmacyStatsOut
+from app.services import audit_service, pharmacy_service, stats_service
 
 router = APIRouter(prefix="/v1/pharmacy", tags=["pharmacy"])
 
 
 class _StatusIn(BaseModel):
     status: str
+
+
+@router.get("/stats", response_model=PharmacyStatsOut)
+def pharmacy_stats(user: User = Depends(require_role("pharmacy")), db: Session = Depends(get_db)):
+    return stats_service.pharmacy_stats(db, user.id)
 
 
 @router.get("/inbox", response_model=list[OfferOut])

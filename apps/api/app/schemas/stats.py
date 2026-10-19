@@ -7,3 +7,10 @@ class DoctorStatsOut(BaseModel):
     completed: int
     prescriptionsIssued: int
     newPatients: int
+
+
+class PharmacyStatsOut(BaseModel):
+    newOrders: int
+    inProgress: int
+    outForDelivery: int
+    completedToday: int

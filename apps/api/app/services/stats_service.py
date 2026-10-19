@@ -3,8 +3,15 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models import Consultation, ConsultationStatus, Prescription, User
-from app.schemas.stats import DoctorStatsOut
+from app.models import (
+    Consultation,
+    ConsultationStatus,
+    OfferStatus,
+    PharmacyOffer,
+    Prescription,
+    User,
+)
+from app.schemas.stats import DoctorStatsOut, PharmacyStatsOut
 
 _PENDING = (ConsultationStatus.BOOKED, ConsultationStatus.ARRIVED, ConsultationStatus.IN_PROGRESS)
 
@@ -38,4 +45,18 @@ def doctor_stats(db: Session, doctor_id) -> DoctorStatsOut:
         completed=completed,
         prescriptionsIssued=prescriptions_issued,
         newPatients=new_patients,
+    )
+
+
+def pharmacy_stats(db: Session, pharmacy_id) -> PharmacyStatsOut:
+    rows = list(db.scalars(select(PharmacyOffer).where(PharmacyOffer.pharmacy_id == pharmacy_id)))
+
+    def count(*states):
+        return sum(1 for o in rows if o.status in states)
+
+    return PharmacyStatsOut(
+        newOrders=count(OfferStatus.PENDING, OfferStatus.TO_VERIFY),
+        inProgress=count(OfferStatus.PREPARING, OfferStatus.VERIFIED, OfferStatus.ACCEPTED),
+        outForDelivery=count(OfferStatus.OUT_FOR_DELIVERY),
+        completedToday=count(OfferStatus.DELIVERED, OfferStatus.COMPLETED),
     )
