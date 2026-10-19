@@ -11,6 +11,7 @@ from app.models import (
     Referral,
     User,
 )
+from app.schemas.doctor_lists import DoctorPrescriptionOut
 from app.schemas.prescription import PrescriptionLineIn, PrescriptionLineOut, PrescriptionOut
 
 
@@ -98,8 +99,6 @@ def get_viewable(db: Session, prescription_id, user: User) -> PrescriptionOut | 
 
 
 def list_for_doctor(db: Session, doctor_id, status: str | None):
-    from app.schemas.doctor_lists import DoctorPrescriptionOut
-
     rows = db.execute(
         select(Prescription, User)
         .join(Consultation, Consultation.id == Prescription.consultation_id)

@@ -64,6 +64,7 @@ def add_note(
     if not note_service.can_access(db, consultation_id, user):
         raise HTTPException(status_code=404, detail="not found")
     n = note_service.add(db, consultation_id, user.id, body.text)
+    audit_service.log(db, user.id, "add_note", "consultation", consultation_id)
     return {"id": str(n.id)}
 
 

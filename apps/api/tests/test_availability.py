@@ -38,6 +38,26 @@ def test_put_availability_round_trips(client, doctor_token):
     assert row0_persisted["morning"] == "10:00-12:00"
 
 
+def test_profile_endpoints_for_doctor_without_profile_row(client, db):
+    import uuid
+
+    from app.models import Role, User
+
+    phone = f"+91{uuid.uuid4().int % 10**10:010d}"
+    db.add(User(id=uuid.uuid4(), phone=phone, role=Role.doctor, name="Dr Outsider"))
+    db.commit()
+    client.post("/v1/auth/request-otp", json={"phone": phone})
+    r = client.post("/v1/auth/verify-otp", json={"phone": phone, "code": "123456"})
+    token = r.json()["accessToken"]
+    h = {"Authorization": f"Bearer {token}"}
+
+    got = client.get("/v1/doctor/profile", headers=h)
+    assert got.status_code == 404
+
+    put = client.put("/v1/doctor/profile", json={"clinicAddress": "X"}, headers=h)
+    assert put.status_code == 404
+
+
 def test_put_availability_isolated_per_doctor(client, db, doctor_token):
     from tests.test_doctor_portal import _doctor_token
 

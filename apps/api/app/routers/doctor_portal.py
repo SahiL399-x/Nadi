@@ -109,7 +109,10 @@ def put_profile(
     user: User = Depends(require_role("doctor")),
     db: Session = Depends(get_db),
 ):
-    return doctor_service.update_profile(db, user.id, body.clinicAddress, body.about)
+    out = doctor_service.update_profile(db, user.id, body.clinicAddress, body.about)
+    if out is None:
+        raise HTTPException(status_code=404, detail="not found")
+    return out
 
 
 @router.post("/consultations/{consultation_id}/refer")

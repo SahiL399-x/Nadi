@@ -80,6 +80,8 @@ def profile(db: Session, doctor_id) -> DoctorProfileOut | None:
 
 def update_profile(db: Session, doctor_id, clinic_address, about):
     doctor = db.get(Doctor, doctor_id)
+    if doctor is None:
+        return None
     if clinic_address is not None:
         doctor.clinic_address = clinic_address
     if about is not None:
