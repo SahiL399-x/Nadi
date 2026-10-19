@@ -16,7 +16,14 @@ class PrescriptionStatus(str, enum.Enum):
 
 
 class OfferStatus(str, enum.Enum):
+    TO_VERIFY = "TO_VERIFY"
     PENDING = "PENDING"
+    PREPARING = "PREPARING"
+    VERIFIED = "VERIFIED"
+    OUT_FOR_DELIVERY = "OUT_FOR_DELIVERY"
+    DELIVERED = "DELIVERED"
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
     ACCEPTED = "ACCEPTED"
     DECLINED = "DECLINED"
 
@@ -65,3 +72,4 @@ class PharmacyOffer(Base):
     )
     rank: Mapped[int] = mapped_column(Integer, default=0)
     responded_at: Mapped[str | None] = mapped_column(String, nullable=True)
+    order_no: Mapped[str] = mapped_column(String, default="", index=True)

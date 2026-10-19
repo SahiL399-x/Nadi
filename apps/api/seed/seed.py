@@ -12,8 +12,10 @@ from app.models import (
     ConsultationStatus,
     Doctor,
     Medicine,
+    OfferStatus,
     Patient,
     Pharmacy,
+    PharmacyOffer,
     Prescription,
     PrescriptionLine,
     Role,
@@ -217,6 +219,73 @@ def _wkt(lat, lng):
     return WKTElement(f"POINT({lng} {lat})", srid=4326)
 
 
+ORDER_SEED = {  # status -> count (dashboard targets; stats compute from these)
+    "PENDING": 12,
+    "PREPARING": 5,
+    "VERIFIED": 3,
+    "OUT_FOR_DELIVERY": 5,
+    "DELIVERED": 15,
+    "COMPLETED": 13,
+}
+
+
+def _seed_orders(db, pharmacy_uid):
+    n = 4500
+    for status, count in ORDER_SEED.items():
+        for _ in range(count):
+            pid = uuid.uuid4()
+            db.add(
+                User(
+                    id=pid, phone=f"+9199{n:08d}", role=Role.patient, name=f"Patient {n}", lang="hi"
+                )
+            )
+            db.flush()
+            db.add(
+                Patient(
+                    user_id=pid,
+                    age=30 + (n % 40),
+                    sex="M" if n % 2 else "F",
+                    location=_wkt(19.99, 73.79),
+                )
+            )
+            cid = uuid.uuid4()
+            db.add(
+                Consultation(
+                    id=cid,
+                    patient_id=pid,
+                    status=ConsultationStatus.DONE,
+                    symptom_text_raw="follow-up",
+                    symptom_text_normalised="follow-up",
+                )
+            )
+            db.flush()
+            pres = uuid.uuid4()
+            db.add(Prescription(id=pres, consultation_id=cid))
+            db.flush()
+            db.add(
+                PrescriptionLine(
+                    id=uuid.uuid4(),
+                    prescription_id=pres,
+                    drug="Paracetamol",
+                    strength="500mg",
+                    frequency="BD",
+                    duration_days=5,
+                    notes=None,
+                )
+            )
+            db.add(
+                PharmacyOffer(
+                    id=uuid.uuid4(),
+                    prescription_id=pres,
+                    pharmacy_id=pharmacy_uid,
+                    status=OfferStatus[status],
+                    rank=0,
+                    order_no=f"NP{n}",
+                )
+            )
+            n += 1
+
+
 def run(db) -> None:
     if db.scalar(select(User).where(User.phone == "+915000000001")):
         return  # already seeded
@@ -242,6 +311,7 @@ def run(db) -> None:
             )
         )
 
+    demo_pharmacy_uid: uuid.UUID | None = None
     for i, (name, lic, lat, lng, delivers, is_open) in enumerate(PHARMACIES):
         uid = uuid.uuid4()
         db.add(User(id=uid, phone=f"+9150000200{i:02d}", role=Role.pharmacy, name=name, lang="mr"))
@@ -256,6 +326,8 @@ def run(db) -> None:
                 is_open=is_open,
             )
         )
+        if i == 0:
+            demo_pharmacy_uid = uid
 
     # a demo doctor to own the queue
     doc_uid = uuid.uuid4()
@@ -353,6 +425,9 @@ def run(db) -> None:
 
     for name, strength, form in MEDICINES:
         db.add(Medicine(name=name, strength=strength, form=form, is_common=True))
+
+    if demo_pharmacy_uid is not None:
+        _seed_orders(db, demo_pharmacy_uid)
 
     db.commit()
 

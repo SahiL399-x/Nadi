@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.core.deps import require_role
 from app.models import User
+from app.schemas.order import OrderOut
 from app.schemas.pharmacy import OfferOut
 from app.services import audit_service, pharmacy_service
 
@@ -15,9 +16,19 @@ def inbox(user: User = Depends(require_role("pharmacy")), db: Session = Depends(
     return pharmacy_service.inbox(db, user.id)
 
 
+@router.get("/orders", response_model=list[OrderOut])
+def orders(
+    status: str | None = None,
+    user: User = Depends(require_role("pharmacy")),
+    db: Session = Depends(get_db),
+):
+    return pharmacy_service.orders(db, user.id, status)
+
+
 @router.post("/offers/{offer_id}/accept")
-def accept(offer_id: str, user: User = Depends(require_role("pharmacy")),
-           db: Session = Depends(get_db)) -> dict:
+def accept(
+    offer_id: str, user: User = Depends(require_role("pharmacy")), db: Session = Depends(get_db)
+) -> dict:
     if not pharmacy_service.accept(db, offer_id, user.id):
         raise HTTPException(status_code=404, detail="not found")
     audit_service.log(db, user.id, "accept_offer", "offer", offer_id)
@@ -25,8 +36,9 @@ def accept(offer_id: str, user: User = Depends(require_role("pharmacy")),
 
 
 @router.post("/offers/{offer_id}/decline")
-def decline(offer_id: str, user: User = Depends(require_role("pharmacy")),
-            db: Session = Depends(get_db)) -> dict:
+def decline(
+    offer_id: str, user: User = Depends(require_role("pharmacy")), db: Session = Depends(get_db)
+) -> dict:
     found, forwarded = pharmacy_service.decline(db, offer_id, user.id)
     if not found:
         raise HTTPException(status_code=404, detail="not found")
