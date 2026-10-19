@@ -27,6 +27,8 @@ A single Expo / React Native app covering all three roles (patient, doctor, phar
 
 **Stack (locked):** Expo / React Native, TypeScript strict. Navigation **expo-router**; styling **NativeWind**; session state **zustand**; server data **React Query** (cache-first, polling for sync). Not a web app — the responsive-web alternative was explicitly rejected.
 
+**UI / performance deps (all free, standard in Expo):** **react-native-reanimated** + **react-native-gesture-handler** (UI-thread animations/gestures), **@shopify/flash-list** (recycling lists), **expo-image** (cached images), **@maplibre/maplibre-react-native** (open-source map, see §4). Rationale in §6.
+
 **Location:** new app at `apps/mobile/` in the monorepo. Contract types imported from `packages/shared-types`.
 
 **Layering (enforces §12 "no business logic in route files"):**
@@ -54,7 +56,7 @@ Per ProjectPlan §13, built for all three roles together (not patient-first).
 - **Reports** — image picker grid. **Real upload** (not skippable-as-stub): selected images are uploaded for real; see §4 upload rules.
 - **Analyzing** — three fading status lines ("Reading your reports" → "Understanding your symptoms" → "Finding the right doctor") while polling triage.
 - **Result** — acuity badge + plain-language line, recommended specialty + 2 alternatives, "Why we think this" drivers card, lab table. If `redFlags` is non-empty, this screen is **replaced entirely** by a full-red emergency view with a call button and nothing else.
-- **Doctors** — filterable cards (specialty, distance, fee, rating, languages). Distance shown as text (no map — see §4).
+- **Doctors** — filterable cards (specialty, distance, fee, rating, languages), distance shown as text; plus a **MapLibre map view** (toggle) with a pin per doctor using their lat/lng, centred on the patient (see §4). Both list and map are driven by the same `GET /v1/doctors` result.
 - **Doctor detail** — profile + stat tiles + date/time slot chips + sticky book bar.
 - **Booked** — confirmation.
 - **Consultation** — **real** jit.si room `meet.jit.si/nadi-{consultationId}` (join button).
@@ -108,7 +110,9 @@ Grounded in the merged backend (`apps/api`), not the frozen contract doc. All ro
 
 ## Section 4 — Error/edge handling, robustness & theming
 
-**Cost discipline (the $0 guarantee):** everything runs locally — Expo Go / local dev build on the phones, FastAPI + Postgres/PostGIS + MinIO in Docker on the laptop, public meet.jit.si, bundled fonts, `lucide-react-native` icons, royalty-free headshots already in `seed/doctor_headshots.json`, React Query polling (no paid realtime). **No map tiles anywhere** — Google Maps / Mapbox require a billing-backed API key. Doctor distance uses the PostGIS-computed `distanceKm` rendered as text (DocIndia-style listing). This removes the only component that could incur cost.
+**Cost discipline (the $0 guarantee):** everything runs locally — Expo Go / local dev build on the phones, FastAPI + Postgres/PostGIS + MinIO in Docker on the laptop, public meet.jit.si, bundled fonts, `lucide-react-native` icons, royalty-free headshots already in `seed/doctor_headshots.json`, React Query polling (no paid realtime). **The map is MapLibre + OpenStreetMap** (`@maplibre/maplibre-react-native`) — open-source, **no API key and no billing account anywhere**, so the demo stays strictly card-free. Google Maps / Mapbox are explicitly rejected because they require a credit-card-backed billing account even inside their free tier. AI OCR / report summary (Gemini or any model) is **out of scope** for this build (see Out of scope) — the ML/OCR stub is unchanged, keeping this spec card-free and avoiding any key in the app bundle.
+
+**Backend prerequisite for doctor pins:** `DoctorOut` currently exposes `distanceKm` but not coordinates. Real map pins need two additive fields — `lat`, `lng` — added to `apps/api/app/schemas/doctor.py` (populated from the existing `Doctor.location` PostGIS point) and mirrored in `packages/shared-types`. This is backward-compatible (additive) and is the only backend touch in this frontend build; it should be carried as the first task of the implementation plan or a tiny companion backend change.
 
 **Session & auth:**
 - React Query 401 interceptor transparently calls `/v1/auth/refresh` **once**; on refresh failure → clear session → OTP screen. No infinite retry loop.
@@ -161,7 +165,33 @@ TDD per the superpowers flow (tests before implementation), scoped to a 1-week d
 
 **E2E — deliberately NOT Detox** (setup cost exceeds payoff for a one-week demo). Instead, a written **3-phone verification script** (the real acceptance test): patient self-signs-up → intake with a real report upload → sees triage → books the seeded doctor → doctor sees the case in queue live → both join the jit.si room → doctor prescribes → patient consents to a pharmacy → pharmacy sees the offer in inbox live → accepts → patient sees `ACCEPTED`. Each step is a checklist item with its expected on-screen result. Run against the real LAN backend + MinIO before demo day.
 
-**Verification gates (`superpowers:verification-before-completion`):** `tsc --noEmit` (strict) clean, Jest suite green, and one full manual pass of the 3-phone script — no "done" claim without all three.
+**Verification gates (`superpowers:verification-before-completion`):** `tsc --noEmit` (strict) clean, Jest suite green, one full manual pass of the 3-phone script, **and a smoothness pass on an actual low-end Android device** (§6) — no "done" claim without all four.
+
+---
+
+## Section 6 — Performance & responsiveness (60fps on low-end devices)
+
+**Requirement:** the app must feel fluid even on cheap hardware — the opposite of the laggy government-app experience, where UI stutters because animations and lists run on the JS thread and drop frames whenever JS is busy. The design makes the UI thread independent of JS work.
+
+**Animations never touch the JS thread**
+- **react-native-reanimated v3** + **react-native-gesture-handler** for every animation and gesture — they run on the UI thread, so transitions, the "analysing" fades, press feedback, and sheet gestures hold 60fps even while JS is mid-fetch or re-rendering. This is the single most important choice separating NADI from the laggy-gov-app feel.
+
+**Lists that don't jank**
+- **FlashList** (`@shopify/flash-list`) instead of `FlatList` for the three heavy lists — doctors, doctor queue, pharmacy inbox. View recycling keeps memory and scroll jank flat on low-end hardware regardless of length.
+- **expo-image** instead of RN `Image` for doctor headshots — disk cache, lower memory, faster decode, no flicker on re-render.
+
+**No wasted renders**
+- New Architecture (Fabric) + Hermes — both default in current Expo SDK; faster startup, lower memory, better render path.
+- zustand selectors kept narrow; React Query `select` so a screen subscribes only to the slice it needs; memoized list rows. Polling already pauses on background, so idle screens cost nothing.
+- Heavy work (pre-upload image processing, large list mounts) deferred past the navigation transition via `InteractionManager`, so navigation always feels instant.
+
+**Map performance**
+- MapLibre renders natively on the GPU; the map is lazy-mounted behind the list/map toggle so it never costs anything on the critical scroll path, and pin markers are capped to the current result set.
+
+**Perceived speed**
+- Skeletons, never spinners (§12); optimistic UI on mutations (book, accept/decline) so taps feel immediate while the request settles; debounced symptom input.
+
+**Measurable gate (not a vibe):** verification includes a pass on a **real low-end Android device** (not just the emulator) — scroll each list, run the full flow, confirm no dropped-frame stutter against a 60fps / 16ms-per-frame budget. "Feels smooth on the cheapest phone in the demo" is an explicit done-criterion.
 
 ---
 
@@ -170,5 +200,7 @@ TDD per the superpowers flow (tests before implementation), scoped to a 1-week d
 - Deployment to any host (Render/Railway/Supabase/EAS store builds).
 - Firebase Phone Auth (real SMS) — OTP stays stubbed for the demo.
 - Trained ML models (Phases 3–5) — ML service stays stubbed.
+- **AI OCR lab-field extraction + report summary** (Gemini or any model) — deferred; the user will bring or build an ML model for this later. The current OCR/labs stub is unchanged.
+- Google Maps / Mapbox (billing-account-backed) — rejected in favour of card-free MapLibre/OSM.
 - Push notifications, websockets, async OCR via Redis/Upstash.
 - Google Play publishing ($25 one-time) — only if ever published.
