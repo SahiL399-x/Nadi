@@ -14,6 +14,8 @@ from app.models import (
     Medicine,
     Patient,
     Pharmacy,
+    Prescription,
+    PrescriptionLine,
     Role,
     TriageResult,
     User,
@@ -282,6 +284,7 @@ def run(db) -> None:
     today = datetime.now(UTC).replace(
         microsecond=0
     )  # NOTE: seed runs at container start; fine for demo
+    done_cids: list[uuid.UUID] = []
     for i, (pname, age, sex, acuity, complaint) in enumerate(QUEUE):
         pat_uid = uuid.uuid4()
         db.add(
@@ -322,6 +325,31 @@ def run(db) -> None:
                 model_version="stub-keyword-v0",
             )
         )
+        if status == "DONE":
+            done_cids.append(cid)
+
+    # issued prescriptions for the demo doctor's completed visits — 2 per DONE
+    # consultation reaches the mockup's "Prescriptions Issued 6".
+    PRES_LINES = [
+        ("Paracetamol", "500mg", "BD", 5),
+        ("Amoxicillin", "500mg", "TDS", 5),
+    ]
+    for cid in done_cids:
+        for drug, strength, frequency, duration_days in PRES_LINES:
+            pres_id = uuid.uuid4()
+            db.add(Prescription(id=pres_id, consultation_id=cid))
+            db.flush()
+            db.add(
+                PrescriptionLine(
+                    id=uuid.uuid4(),
+                    prescription_id=pres_id,
+                    drug=drug,
+                    strength=strength,
+                    frequency=frequency,
+                    duration_days=duration_days,
+                    notes=None,
+                )
+            )
 
     for name, strength, form in MEDICINES:
         db.add(Medicine(name=name, strength=strength, form=form, is_common=True))

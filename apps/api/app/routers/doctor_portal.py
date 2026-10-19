@@ -9,9 +9,15 @@ from app.models import User
 from app.schemas.appointment import AppointmentOut
 from app.schemas.consultation import QueueItemOut
 from app.schemas.prescription import PrescribeIn, ReferIn
-from app.services import audit_service, consultation_service, prescription_service
+from app.schemas.stats import DoctorStatsOut
+from app.services import audit_service, consultation_service, prescription_service, stats_service
 
 router = APIRouter(prefix="/v1/doctor", tags=["doctor"])
+
+
+@router.get("/stats", response_model=DoctorStatsOut)
+def stats(user: User = Depends(require_role("doctor")), db: Session = Depends(get_db)):
+    return stats_service.doctor_stats(db, user.id)
 
 
 @router.get("/queue", response_model=list[QueueItemOut])
