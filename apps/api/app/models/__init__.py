@@ -1,4 +1,5 @@
 from app.models.audit import AuditLog
+from app.models.availability import DoctorAvailability
 from app.models.base import Base
 from app.models.consultation import Consultation, ConsultationStatus, Flag, LabValue, Report
 from app.models.history import PatientCondition, PatientVisit
@@ -23,6 +24,7 @@ __all__ = [
     "ConsultationNote",
     "ConsultationStatus",
     "Doctor",
+    "DoctorAvailability",
     "Flag",
     "LabValue",
     "Medicine",

@@ -51,6 +51,8 @@ class Doctor(Base):
     review_count: Mapped[int] = mapped_column(Integer, default=0)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=True)
     photo_url: Mapped[str] = mapped_column(String, default="")
+    clinic_address: Mapped[str] = mapped_column(String, default="")
+    about: Mapped[str] = mapped_column(String, default="")
 
 
 class Pharmacy(Base):

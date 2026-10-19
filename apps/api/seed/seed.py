@@ -359,6 +359,8 @@ def run(db) -> None:
             review_count=100,
             is_verified=True,
             photo_url=_PHOTOS[0],
+            clinic_address="Mital Nagar, Nashik",
+            about="General physician, 10 years' experience.",
         )
     )
     db.flush()
