@@ -1,9 +1,12 @@
+from datetime import date
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
 from app.core.deps import require_role
 from app.models import User
+from app.schemas.appointment import AppointmentOut
 from app.schemas.consultation import QueueItemOut
 from app.schemas.prescription import PrescribeIn, ReferIn
 from app.services import audit_service, consultation_service, prescription_service
@@ -18,9 +21,22 @@ def queue(user: User = Depends(require_role("doctor")), db: Session = Depends(ge
     return items
 
 
+@router.get("/appointments", response_model=list[AppointmentOut])
+def appointments(
+    date: date | None = None,
+    user: User = Depends(require_role("doctor")),
+    db: Session = Depends(get_db),
+):
+    return consultation_service.doctor_appointments(db, user.id, date)
+
+
 @router.post("/consultations/{consultation_id}/refer")
-def refer(consultation_id: str, body: ReferIn,
-          user: User = Depends(require_role("doctor")), db: Session = Depends(get_db)) -> dict:
+def refer(
+    consultation_id: str,
+    body: ReferIn,
+    user: User = Depends(require_role("doctor")),
+    db: Session = Depends(get_db),
+) -> dict:
     if consultation_service.get_for_doctor(db, consultation_id, user.id) is None:
         raise HTTPException(status_code=404, detail="not found")
     prescription_service.refer(db, consultation_id, user.id, body.toSpecialty, body.reason)
@@ -29,8 +45,12 @@ def refer(consultation_id: str, body: ReferIn,
 
 
 @router.post("/consultations/{consultation_id}/prescribe")
-def prescribe(consultation_id: str, body: PrescribeIn,
-              user: User = Depends(require_role("doctor")), db: Session = Depends(get_db)) -> dict:
+def prescribe(
+    consultation_id: str,
+    body: PrescribeIn,
+    user: User = Depends(require_role("doctor")),
+    db: Session = Depends(get_db),
+) -> dict:
     if consultation_service.get_for_doctor(db, consultation_id, user.id) is None:
         raise HTTPException(status_code=404, detail="not found")
     pres = prescription_service.create(db, consultation_id, body.lines)

@@ -1,13 +1,22 @@
 import json
 import pathlib
 import uuid
+from datetime import UTC, datetime
 
 from geoalchemy2.elements import WKTElement
 from sqlalchemy import select
 
 from app.core.db import SessionLocal
 from app.models import (
-    Consultation, ConsultationStatus, Doctor, Medicine, Patient, Pharmacy, Role, TriageResult, User,
+    Consultation,
+    ConsultationStatus,
+    Doctor,
+    Medicine,
+    Patient,
+    Pharmacy,
+    Role,
+    TriageResult,
+    User,
 )
 
 HEADSHOTS = json.loads((pathlib.Path(__file__).parent / "doctor_headshots.json").read_text())
@@ -16,16 +25,115 @@ _PHOTOS = [_TMPL.replace("{id}", h["id"]) for h in HEADSHOTS["headshots"]]
 
 # (name, specialty, qual, exp, fee, rating, reviews, langs, lat, lng)
 DOCTORS = [
-    ("Dr. Anjali Deshmukh", "Cardiology", "MBBS, MD, DM", 14, 800, 4.9, 212, ["Hindi", "Marathi", "English"], 19.9975, 73.7898),
-    ("Dr. Rohan Kulkarni", "General Physician", "MBBS", 6, 300, 4.3, 88, ["Hindi", "Marathi"], 20.0110, 73.7900),
-    ("Dr. Sneha Patil", "General Medicine", "MBBS, MD", 9, 450, 4.6, 134, ["Marathi", "English"], 19.9600, 73.8300),
-    ("Dr. Imran Shaikh", "ENT", "MBBS, MS", 11, 500, 4.5, 156, ["Hindi", "English"], 20.0300, 73.7700),
-    ("Dr. Priya Nair", "Dermatology", "MBBS, MD", 8, 600, 4.7, 190, ["English", "Hindi"], 19.9400, 73.7600),
-    ("Dr. Vikram Jadhav", "Orthopaedics", "MBBS, MS", 16, 700, 4.8, 203, ["Marathi", "Hindi"], 20.0500, 73.8100),
-    ("Dr. Meera Joshi", "Gynaecology", "MBBS, MD", 12, 650, 4.6, 171, ["Marathi", "English", "Hindi"], 19.9700, 73.8000),
-    ("Dr. Sameer Pawar", "Paediatrics", "MBBS, MD", 7, 400, 4.4, 97, ["Hindi", "Marathi"], 20.0200, 73.8200),
+    (
+        "Dr. Anjali Deshmukh",
+        "Cardiology",
+        "MBBS, MD, DM",
+        14,
+        800,
+        4.9,
+        212,
+        ["Hindi", "Marathi", "English"],
+        19.9975,
+        73.7898,
+    ),
+    (
+        "Dr. Rohan Kulkarni",
+        "General Physician",
+        "MBBS",
+        6,
+        300,
+        4.3,
+        88,
+        ["Hindi", "Marathi"],
+        20.0110,
+        73.7900,
+    ),
+    (
+        "Dr. Sneha Patil",
+        "General Medicine",
+        "MBBS, MD",
+        9,
+        450,
+        4.6,
+        134,
+        ["Marathi", "English"],
+        19.9600,
+        73.8300,
+    ),
+    (
+        "Dr. Imran Shaikh",
+        "ENT",
+        "MBBS, MS",
+        11,
+        500,
+        4.5,
+        156,
+        ["Hindi", "English"],
+        20.0300,
+        73.7700,
+    ),
+    (
+        "Dr. Priya Nair",
+        "Dermatology",
+        "MBBS, MD",
+        8,
+        600,
+        4.7,
+        190,
+        ["English", "Hindi"],
+        19.9400,
+        73.7600,
+    ),
+    (
+        "Dr. Vikram Jadhav",
+        "Orthopaedics",
+        "MBBS, MS",
+        16,
+        700,
+        4.8,
+        203,
+        ["Marathi", "Hindi"],
+        20.0500,
+        73.8100,
+    ),
+    (
+        "Dr. Meera Joshi",
+        "Gynaecology",
+        "MBBS, MD",
+        12,
+        650,
+        4.6,
+        171,
+        ["Marathi", "English", "Hindi"],
+        19.9700,
+        73.8000,
+    ),
+    (
+        "Dr. Sameer Pawar",
+        "Paediatrics",
+        "MBBS, MD",
+        7,
+        400,
+        4.4,
+        97,
+        ["Hindi", "Marathi"],
+        20.0200,
+        73.8200,
+    ),
     ("Dr. Kavita Rao", "General Physician", "MBBS", 5, 250, 4.2, 61, ["Marathi"], 19.9300, 73.7500),
-    ("Dr. Arjun Menon", "Haematology", "MBBS, MD, DM", 13, 750, 4.7, 145, ["English", "Hindi"], 20.0400, 73.7950),
+    (
+        "Dr. Arjun Menon",
+        "Haematology",
+        "MBBS, MD, DM",
+        13,
+        750,
+        4.7,
+        145,
+        ["English", "Hindi"],
+        20.0400,
+        73.7950,
+    ),
 ]
 
 PHARMACIES = [
@@ -37,26 +145,46 @@ PHARMACIES = [
 ]
 
 MEDICINES = [
-    ("Paracetamol", "500mg", "tablet"), ("Paracetamol", "650mg", "tablet"),
-    ("Amoxicillin", "500mg", "capsule"), ("Azithromycin", "500mg", "tablet"),
-    ("Amlodipine", "5mg", "tablet"), ("Metformin", "500mg", "tablet"),
-    ("Pantoprazole", "40mg", "tablet"), ("Cetirizine", "10mg", "tablet"),
-    ("Ibuprofen", "400mg", "tablet"), ("Omeprazole", "20mg", "capsule"),
-    ("Atorvastatin", "10mg", "tablet"), ("Telmisartan", "40mg", "tablet"),
-    ("Montelukast", "10mg", "tablet"), ("Levocetirizine", "5mg", "tablet"),
-    ("Dolo", "650mg", "tablet"), ("Augmentin", "625mg", "tablet"),
-    ("Pantocid", "40mg", "tablet"), ("Shelcal", "500mg", "tablet"),
-    ("Thyronorm", "50mcg", "tablet"), ("Glimepiride", "1mg", "tablet"),
-    ("Losartan", "50mg", "tablet"), ("Rosuvastatin", "10mg", "tablet"),
-    ("Clopidogrel", "75mg", "tablet"), ("Aspirin", "75mg", "tablet"),
-    ("Metoprolol", "25mg", "tablet"), ("Ramipril", "5mg", "capsule"),
-    ("Cefixime", "200mg", "tablet"), ("Ofloxacin", "200mg", "tablet"),
-    ("Domperidone", "10mg", "tablet"), ("Ondansetron", "4mg", "tablet"),
-    ("Prednisolone", "10mg", "tablet"), ("Salbutamol", "100mcg", "inhaler"),
-    ("Insulin", "100IU", "injection"), ("Cough Syrup", "100ml", "syrup"),
-    ("ORS", "21.8g", "sachet"), ("Vitamin D3", "60000IU", "sachet"),
-    ("B-Complex", "", "capsule"), ("Iron Folic Acid", "", "tablet"),
-    ("Calcium", "500mg", "tablet"), ("Zincovit", "", "tablet"),
+    ("Paracetamol", "500mg", "tablet"),
+    ("Paracetamol", "650mg", "tablet"),
+    ("Amoxicillin", "500mg", "capsule"),
+    ("Azithromycin", "500mg", "tablet"),
+    ("Amlodipine", "5mg", "tablet"),
+    ("Metformin", "500mg", "tablet"),
+    ("Pantoprazole", "40mg", "tablet"),
+    ("Cetirizine", "10mg", "tablet"),
+    ("Ibuprofen", "400mg", "tablet"),
+    ("Omeprazole", "20mg", "capsule"),
+    ("Atorvastatin", "10mg", "tablet"),
+    ("Telmisartan", "40mg", "tablet"),
+    ("Montelukast", "10mg", "tablet"),
+    ("Levocetirizine", "5mg", "tablet"),
+    ("Dolo", "650mg", "tablet"),
+    ("Augmentin", "625mg", "tablet"),
+    ("Pantocid", "40mg", "tablet"),
+    ("Shelcal", "500mg", "tablet"),
+    ("Thyronorm", "50mcg", "tablet"),
+    ("Glimepiride", "1mg", "tablet"),
+    ("Losartan", "50mg", "tablet"),
+    ("Rosuvastatin", "10mg", "tablet"),
+    ("Clopidogrel", "75mg", "tablet"),
+    ("Aspirin", "75mg", "tablet"),
+    ("Metoprolol", "25mg", "tablet"),
+    ("Ramipril", "5mg", "capsule"),
+    ("Cefixime", "200mg", "tablet"),
+    ("Ofloxacin", "200mg", "tablet"),
+    ("Domperidone", "10mg", "tablet"),
+    ("Ondansetron", "4mg", "tablet"),
+    ("Prednisolone", "10mg", "tablet"),
+    ("Salbutamol", "100mcg", "inhaler"),
+    ("Insulin", "100IU", "injection"),
+    ("Cough Syrup", "100ml", "syrup"),
+    ("ORS", "21.8g", "sachet"),
+    ("Vitamin D3", "60000IU", "sachet"),
+    ("B-Complex", "", "capsule"),
+    ("Iron Folic Acid", "", "tablet"),
+    ("Calcium", "500mg", "tablet"),
+    ("Zincovit", "", "tablet"),
 ]
 
 QUEUE = [
@@ -66,6 +194,20 @@ QUEUE = [
     ("Lata More", 29, "F", "ROUTINE", "fever and cough for two days"),
     ("Vijay Shinde", 63, "M", "PRIORITY", "weakness and dizziness"),
     ("Pooja Deshpande", 7, "F", "ROUTINE", "mild cold"),
+    ("Deepak Sharma", 45, "M", "ROUTINE", "back pain"),
+    ("Anita Rao", 52, "F", "PRIORITY", "high blood pressure"),
+]
+
+# (status, hour, minute) — the demo doctor's day, in display order.
+APPT_PLAN = [
+    ("DONE", 9, 0),
+    ("DONE", 9, 45),
+    ("DONE", 10, 30),
+    ("IN_PROGRESS", 11, 15),
+    ("ARRIVED", 12, 0),
+    ("BOOKED", 14, 0),
+    ("BOOKED", 15, 30),
+    ("BOOKED", 16, 45),
 ]
 
 
@@ -81,47 +223,105 @@ def run(db) -> None:
         uid = uuid.uuid4()
         db.add(User(id=uid, phone=f"+9150000100{i:02d}", role=Role.doctor, name=name, lang="mr"))
         db.flush()
-        db.add(Doctor(user_id=uid, specialty=spec, qualifications=qual, reg_number=f"MH{10000+i}",
-                      experience_years=exp, fee_inr=fee, languages=langs, location=_wkt(lat, lng),
-                      rating=rating, review_count=reviews, is_verified=True,
-                      photo_url=_PHOTOS[i % len(_PHOTOS)]))
+        db.add(
+            Doctor(
+                user_id=uid,
+                specialty=spec,
+                qualifications=qual,
+                reg_number=f"MH{10000+i}",
+                experience_years=exp,
+                fee_inr=fee,
+                languages=langs,
+                location=_wkt(lat, lng),
+                rating=rating,
+                review_count=reviews,
+                is_verified=True,
+                photo_url=_PHOTOS[i % len(_PHOTOS)],
+            )
+        )
 
     for i, (name, lic, lat, lng, delivers, is_open) in enumerate(PHARMACIES):
         uid = uuid.uuid4()
         db.add(User(id=uid, phone=f"+9150000200{i:02d}", role=Role.pharmacy, name=name, lang="mr"))
         db.flush()
-        db.add(Pharmacy(user_id=uid, name=name, licence_number=lic, location=_wkt(lat, lng),
-                        delivers=delivers, is_open=is_open))
+        db.add(
+            Pharmacy(
+                user_id=uid,
+                name=name,
+                licence_number=lic,
+                location=_wkt(lat, lng),
+                delivers=delivers,
+                is_open=is_open,
+            )
+        )
 
     # a demo doctor to own the queue
     doc_uid = uuid.uuid4()
-    db.add(User(id=doc_uid, phone="+915000000001", role=Role.doctor, name="Dr. Demo Queue", lang="en"))
+    db.add(
+        User(id=doc_uid, phone="+915000000001", role=Role.doctor, name="Dr. Demo Queue", lang="en")
+    )
     db.flush()
-    db.add(Doctor(user_id=doc_uid, specialty="General Medicine", qualifications="MBBS, MD",
-                  reg_number="MH99999", experience_years=10, fee_inr=400, languages=["Hindi", "English"],
-                  location=_wkt(19.9975, 73.7898), rating=4.5, review_count=100,
-                  is_verified=True, photo_url=_PHOTOS[0]))
+    db.add(
+        Doctor(
+            user_id=doc_uid,
+            specialty="General Medicine",
+            qualifications="MBBS, MD",
+            reg_number="MH99999",
+            experience_years=10,
+            fee_inr=400,
+            languages=["Hindi", "English"],
+            location=_wkt(19.9975, 73.7898),
+            rating=4.5,
+            review_count=100,
+            is_verified=True,
+            photo_url=_PHOTOS[0],
+        )
+    )
     db.flush()
 
+    today = datetime.now(UTC).replace(
+        microsecond=0
+    )  # NOTE: seed runs at container start; fine for demo
     for i, (pname, age, sex, acuity, complaint) in enumerate(QUEUE):
         pat_uid = uuid.uuid4()
-        db.add(User(id=pat_uid, phone=f"+9150000300{i:02d}", role=Role.patient, name=pname, lang="hi"))
+        db.add(
+            User(id=pat_uid, phone=f"+9150000300{i:02d}", role=Role.patient, name=pname, lang="hi")
+        )
         db.flush()
         db.add(Patient(user_id=pat_uid, age=age, sex=sex, location=_wkt(19.99, 73.79)))
         cid = uuid.uuid4()
         db.flush()
-        db.add(Consultation(id=cid, patient_id=pat_uid, doctor_id=doc_uid,
-                            status=ConsultationStatus.BOOKED, symptom_text_raw=complaint,
-                            symptom_text_normalised=complaint, booked_for="10:00"))
+        status, hh, mm = APPT_PLAN[i]
+        sched = today.replace(hour=hh, minute=mm, second=0)
+        db.add(
+            Consultation(
+                id=cid,
+                patient_id=pat_uid,
+                doctor_id=doc_uid,
+                status=ConsultationStatus[status],
+                symptom_text_raw=complaint,
+                symptom_text_normalised=complaint,
+                booked_for=f"{hh:02d}:{mm:02d}",
+                scheduled_at=sched,
+            )
+        )
         db.flush()
-        db.add(TriageResult(id=uuid.uuid4(), consultation_id=cid, acuity=acuity,
-                            acuity_confidence=0.9,
-                            specialties=[{"name": "General Medicine", "score": 0.8},
-                                         {"name": "Cardiology", "score": 0.1},
-                                         {"name": "ENT", "score": 0.1}],
-                            drivers=[{"feature": "symptom", "contribution": 0.5}],
-                            red_flags=["chest pain with breathlessness"] if acuity == "EMERGENCY" else [],
-                            model_version="stub-keyword-v0"))
+        db.add(
+            TriageResult(
+                id=uuid.uuid4(),
+                consultation_id=cid,
+                acuity=acuity,
+                acuity_confidence=0.9,
+                specialties=[
+                    {"name": "General Medicine", "score": 0.8},
+                    {"name": "Cardiology", "score": 0.1},
+                    {"name": "ENT", "score": 0.1},
+                ],
+                drivers=[{"feature": "symptom", "contribution": 0.5}],
+                red_flags=["chest pain with breathlessness"] if acuity == "EMERGENCY" else [],
+                model_version="stub-keyword-v0",
+            )
+        )
 
     for name, strength, form in MEDICINES:
         db.add(Medicine(name=name, strength=strength, form=form, is_common=True))
