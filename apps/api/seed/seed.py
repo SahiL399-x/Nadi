@@ -14,6 +14,8 @@ from app.models import (
     Medicine,
     OfferStatus,
     Patient,
+    PatientCondition,
+    PatientVisit,
     Pharmacy,
     PharmacyOffer,
     Prescription,
@@ -399,6 +401,23 @@ def run(db) -> None:
         )
         if status == "DONE":
             done_cids.append(cid)
+
+        if i == 0:  # give the first a rich history matching the mockup
+            db.add(
+                PatientCondition(
+                    id=uuid.uuid4(), patient_id=pat_uid, label="Diabetes", kind="family_history"
+                )
+            )
+        db.add(
+            PatientVisit(
+                id=uuid.uuid4(),
+                patient_id=pat_uid,
+                consultation_id=cid,
+                visited_at="2025-10-16",
+                summary=complaint,
+                status="Completed",
+            )
+        )
 
     # issued prescriptions for the demo doctor's completed visits — 2 per DONE
     # consultation reaches the mockup's "Prescriptions Issued 6".

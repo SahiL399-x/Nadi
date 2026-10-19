@@ -8,9 +8,16 @@ from app.core.deps import require_role
 from app.models import User
 from app.schemas.appointment import AppointmentOut
 from app.schemas.consultation import QueueItemOut
+from app.schemas.patient_profile import PatientProfileOut
 from app.schemas.prescription import PrescribeIn, ReferIn
 from app.schemas.stats import DoctorStatsOut
-from app.services import audit_service, consultation_service, prescription_service, stats_service
+from app.services import (
+    audit_service,
+    consultation_service,
+    patient_service,
+    prescription_service,
+    stats_service,
+)
 
 router = APIRouter(prefix="/v1/doctor", tags=["doctor"])
 
@@ -34,6 +41,20 @@ def appointments(
     db: Session = Depends(get_db),
 ):
     return consultation_service.doctor_appointments(db, user.id, date)
+
+
+@router.get("/patients/{patient_id}", response_model=PatientProfileOut)
+def patient_profile(
+    patient_id: str,
+    user: User = Depends(require_role("doctor")),
+    db: Session = Depends(get_db),
+):
+    if not patient_service.owned_by_doctor(db, patient_id, user.id):
+        raise HTTPException(status_code=404, detail="not found")
+    out = patient_service.profile(db, patient_id)
+    if out is None:
+        raise HTTPException(status_code=404, detail="not found")
+    return out
 
 
 @router.post("/consultations/{consultation_id}/refer")
