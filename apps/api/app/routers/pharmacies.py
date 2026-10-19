@@ -63,4 +63,5 @@ def set_order_status(
         raise HTTPException(status_code=404, detail="not found")
     if not allowed:
         raise HTTPException(status_code=400, detail="illegal transition")
+    audit_service.log(db, user.id, "set_order_status", "offer", offer_id)
     return {"status": body.status.upper()}

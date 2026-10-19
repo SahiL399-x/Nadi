@@ -41,3 +41,13 @@ def test_illegal_transition_rejected(client, pharmacy_token):
     if oid:
         r = client.post(f"/v1/pharmacy/orders/{oid}/status", json={"status": "PENDING"}, headers=h)
         assert r.status_code == 400
+
+
+def test_set_status_unknown_offer_404(client, pharmacy_token):
+    h = {"Authorization": f"Bearer {pharmacy_token}"}
+    r = client.post(
+        "/v1/pharmacy/orders/00000000-0000-0000-0000-000000000000/status",
+        json={"status": "PREPARING"},
+        headers=h,
+    )
+    assert r.status_code == 404
