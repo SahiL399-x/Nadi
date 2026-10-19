@@ -20,6 +20,7 @@ from app.models import (
     PharmacyOffer,
     Prescription,
     PrescriptionLine,
+    PrescriptionStatus,
     Report,
     Role,
     TriageResult,
@@ -263,7 +264,13 @@ def _seed_orders(db, pharmacy_uid):
             )
             db.flush()
             pres = uuid.uuid4()
-            db.add(Prescription(id=pres, consultation_id=cid))
+            if status in ("DELIVERED", "COMPLETED"):
+                pres_status = PrescriptionStatus.DELIVERED
+            elif status in ("ACCEPTED", "PREPARING", "VERIFIED", "OUT_FOR_DELIVERY"):
+                pres_status = PrescriptionStatus.ACCEPTED
+            else:
+                pres_status = PrescriptionStatus.PENDING
+            db.add(Prescription(id=pres, consultation_id=cid, status=pres_status))
             db.flush()
             db.add(
                 PrescriptionLine(
@@ -426,10 +433,13 @@ def run(db) -> None:
         ("Paracetamol", "500mg", "BD", 5),
         ("Amoxicillin", "500mg", "TDS", 5),
     ]
-    for cid in done_cids:
+    for idx, cid in enumerate(done_cids):
+        # the first DONE consultation's prescriptions are seeded as already
+        # delivered, so the demo doctor's ?status=completed filter is non-empty.
+        pres_status = PrescriptionStatus.DELIVERED if idx == 0 else PrescriptionStatus.PENDING
         for drug, strength, frequency, duration_days in PRES_LINES:
             pres_id = uuid.uuid4()
-            db.add(Prescription(id=pres_id, consultation_id=cid))
+            db.add(Prescription(id=pres_id, consultation_id=cid, status=pres_status))
             db.flush()
             db.add(
                 PrescriptionLine(

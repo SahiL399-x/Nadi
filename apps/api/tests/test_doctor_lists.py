@@ -11,7 +11,9 @@ def test_doctor_prescriptions_list_status_filter(client, doctor_token):
     h = {"Authorization": f"Bearer {doctor_token}"}
     r = client.get("/v1/doctor/prescriptions", params={"status": "completed"}, headers=h)
     assert r.status_code == 200
-    for item in r.json():
+    body = r.json()
+    assert body  # demo doctor's first DONE consultation is seeded as delivered
+    for item in body:
         assert item["status"] == "DELIVERED"
 
 

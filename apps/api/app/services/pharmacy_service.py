@@ -149,6 +149,10 @@ def set_status(db: Session, offer_id, pharmacy_id, new_status: str) -> tuple[boo
     if target not in _ALLOWED.get(offer.status.value, set()):
         return (True, False)
     offer.status = OfferStatus(target)
+    if target in ("DELIVERED", "COMPLETED"):
+        pres = db.get(Prescription, offer.prescription_id)
+        if pres is not None:
+            pres.status = PrescriptionStatus.DELIVERED
     db.commit()
     return (True, True)
 
