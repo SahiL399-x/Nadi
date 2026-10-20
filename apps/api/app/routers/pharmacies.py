@@ -6,11 +6,23 @@ from app.core.db import get_db
 from app.core.deps import require_role
 from app.models import User
 from app.schemas.order import OrderOut
-from app.schemas.pharmacy import OfferOut
+from app.schemas.pharmacy import OfferOut, PharmacyOut
 from app.schemas.stats import PharmacyStatsOut
 from app.services import audit_service, pharmacy_service, stats_service
 
 router = APIRouter(prefix="/v1/pharmacy", tags=["pharmacy"])
+
+list_router = APIRouter(prefix="/v1/pharmacies", tags=["pharmacies"])
+
+
+@list_router.get("", response_model=list[PharmacyOut])
+def list_pharmacies(
+    lat: float = 19.9975,
+    lng: float = 73.7898,
+    radiusKm: float = 50.0,
+    db: Session = Depends(get_db),
+) -> list[PharmacyOut]:
+    return pharmacy_service.search(db, lat, lng, radiusKm)
 
 
 class _StatusIn(BaseModel):

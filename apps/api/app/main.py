@@ -11,6 +11,7 @@ app.include_router(doctors.router)
 app.include_router(doctor_portal.router)
 app.include_router(prescriptions.router)
 app.include_router(pharmacies.router)
+app.include_router(pharmacies.list_router)
 app.include_router(uploads.router)
 app.include_router(medicines.router)
 

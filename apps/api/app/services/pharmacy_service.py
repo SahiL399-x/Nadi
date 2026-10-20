@@ -1,11 +1,13 @@
 import uuid
 
-from sqlalchemy import select
+from geoalchemy2.functions import ST_Distance, ST_DWithin, ST_MakePoint, ST_SetSRID
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models import (
     Consultation,
     OfferStatus,
+    Pharmacy,
     PharmacyConsent,
     PharmacyOffer,
     Prescription,
@@ -14,7 +16,7 @@ from app.models import (
     User,
 )
 from app.schemas.order import OrderOut
-from app.schemas.pharmacy import OfferOut
+from app.schemas.pharmacy import OfferOut, PharmacyOut
 
 
 def grant_consent(db: Session, prescription_id, pharmacy_ids: list[str]) -> None:
@@ -72,6 +74,34 @@ def inbox(db: Session, pharmacy_id) -> list[OfferOut]:
         )
         for offer, pres, patient in rows
     ]
+
+
+def _point(lat: float, lng: float):
+    return func.cast(ST_SetSRID(ST_MakePoint(lng, lat), 4326), type_=Pharmacy.location.type)
+
+
+def search(db: Session, lat: float, lng: float, radius_km: float) -> list[PharmacyOut]:
+    pt = _point(lat, lng)
+    dist = ST_Distance(Pharmacy.location, pt)
+    stmt = (
+        select(Pharmacy, dist)
+        .where(ST_DWithin(Pharmacy.location, pt, radius_km * 1000))
+        .order_by(dist.asc())
+    )
+    rows = db.execute(stmt).all()
+    out: list[PharmacyOut] = []
+    for ph, d_m in rows:
+        km = round(d_m / 1000.0, 1)
+        out.append(
+            PharmacyOut(
+                id=str(ph.user_id),
+                name=ph.name,
+                distanceKm=km,
+                deliversInMins=(0 if not ph.delivers else 15 + round(km * 3)),
+                isOpen=ph.is_open,
+            )
+        )
+    return out
 
 
 def _next_consent(db: Session, prescription_id, after_rank: int) -> PharmacyConsent | None:
