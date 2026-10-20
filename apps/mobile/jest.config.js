@@ -11,7 +11,7 @@ module.exports = {
     '^@nadi/shared-types$': '<rootDir>/../../packages/shared-types/src/types.ts',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|nativewind|react-native-css-interop|msw|@mswjs/.*|@msw/.*|@open-draft/.*|headers-polyfill|outvariant|until-async|is-node-process|rettime|cookie|strict-event-emitter))',
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|expo-router|react-navigation|@react-navigation/.*|standard-navigation|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|nativewind|react-native-css-interop|msw|@mswjs/.*|@msw/.*|@open-draft/.*|headers-polyfill|outvariant|until-async|is-node-process|rettime|cookie|strict-event-emitter))',
   ],
   transform: { '^.+\\.(js|jsx|ts|tsx|mjs)$': 'babel-jest' },
   testEnvironmentOptions: {
