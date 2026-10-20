@@ -7,6 +7,7 @@
     "babel-preset-expo": "~58.0.0",
     "expo": "~58.0.16",
     "expo-constants": "~58.0.12",
+    "expo-image": "~58.0.16",
     "expo-linking": "~58.0.13",
     "expo-network": "~58.0.3",
     "expo-router": "~58.0.24",
