@@ -35,4 +35,5 @@ def refresh(body: RefreshIn, db: Session = Depends(get_db)) -> dict:
     user = db.get(User, payload["sub"])
     if user is None:
         raise HTTPException(status_code=401, detail="unknown user")
-    return {"accessToken": create_access_token(str(user.id), user.role.value)}
+    return {"accessToken": create_access_token(str(user.id), user.role.value),
+            "role": user.role.value, "userId": str(user.id)}

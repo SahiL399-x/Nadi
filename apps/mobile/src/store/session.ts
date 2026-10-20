@@ -14,6 +14,7 @@ type SessionState = {
   setAccessToken: (token: string) => void;
   signOut: () => Promise<void>;
   restoreSession: () => Promise<void>;
+  applyRefresh: (p: { accessToken: string; role: Role; userId: string }) => void;
 };
 
 export const useSession = create<SessionState>((set) => ({
@@ -32,4 +33,5 @@ export const useSession = create<SessionState>((set) => ({
     const token = await SecureStore.getItemAsync(REFRESH_KEY);
     if (token) set({ refreshToken: token });
   },
+  applyRefresh: (p) => set({ accessToken: p.accessToken, role: p.role, userId: p.userId }),
 }));
