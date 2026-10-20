@@ -15,7 +15,7 @@ export interface TriageResult {
 }
 export interface Doctor {
   id: string; name: string; specialty: string; qualifications: string;
-  experienceYears: number; distanceKm: number; feeInr: number; rating: number;
+  experienceYears: number; distanceKm: number; lat: number; lng: number; feeInr: number; rating: number;
   reviewCount: number; languages: string[]; nextSlot: string;
   photoUrl: string; availableSlots: string[];
 }
