@@ -1,4 +1,4 @@
-import { Text, View } from 'react-native';
+import { Text, View, Pressable } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -24,9 +24,11 @@ export default function PharmacyInbox() {
           <Card>
             <Text style={{ fontSize: t.body, fontWeight: '700', color: colors.text }}>{item.patientName}</Text>
             <Text style={{ fontSize: t.sm, color: colors.textMuted }}>{item.lines.length} item(s)</Text>
-            <Text onPress={() => { qc.setQueryData(['offer', item.id], item);
+            <Pressable onPress={() => { qc.setQueryData(['offer', item.id], item);
               router.push({ pathname: '/(pharmacy)/order/[oid]', params: { oid: item.id } }); }}
-              style={{ color: colors.navy, fontSize: t.sm, marginTop: spacing.xs }}>View order →</Text>
+              style={{ minHeight: 48, justifyContent: 'center', marginTop: spacing.xs }}>
+              <Text style={{ color: colors.navy, fontSize: t.sm }}>View order →</Text>
+            </Pressable>
           </Card>
         </View>
       )} />
