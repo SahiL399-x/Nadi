@@ -141,6 +141,7 @@ Grounded in the merged backend (`apps/api`), not the frozen contract doc. All ro
 
 **Video:**
 - Join opens `meet.jit.si/nadi-{consultationId}`; if the in-app WebView/permissions fail, fall back to the system browser with the same URL. Camera/mic permission requested just-in-time with rationale.
+- **Amended 2026-10-20 (per backend-expansion spec §3):** video is now **in-app via `@jitsi/react-native-sdk`** embedded in the Consultation screen for both patient and doctor (same deterministic room `nadi-{consultationId}`, free public `meet.jit.si`, no key/billing; needs the MapLibre-style native dev build). The system-browser open is retained only as the automatic fallback when the native SDK is unavailable. Implemented in Plans 02 (Task 12) and 03 (Task 6).
 
 **Contract safety (the "no loopholes" core):**
 - Mirror `packages/shared-types` with **zod schemas**; parse every API response at the client boundary. Contract drift fails loudly at the seam instead of rendering `undefined` downstream.
