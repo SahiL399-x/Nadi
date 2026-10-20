@@ -26,7 +26,8 @@
       "expo-router",
       "expo-status-bar",
       "expo-image",
-      "expo-web-browser"
+      "expo-web-browser",
+      "@maplibre/maplibre-react-native"
     ]
   }
 }
