@@ -4,7 +4,7 @@ from datetime import date
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import Consultation, ConsultationStatus, Patient, Report, TriageResult, User
+from app.models import Consultation, ConsultationStatus, Patient, Prescription, Report, TriageResult, User
 from app.schemas.appointment import AppointmentOut, status_label
 from app.schemas.common import TriageInput, TriageResultOut
 from app.schemas.consultation import QueueItemOut
@@ -92,6 +92,16 @@ def get_owned(db: Session, consultation_id, patient_id) -> Consultation | None:
 
 def get_triage(db: Session, consultation_id) -> TriageResult | None:
     return db.scalar(select(TriageResult).where(TriageResult.consultation_id == consultation_id))
+
+
+def detail(db: Session, consult: Consultation) -> dict:
+    pres = db.scalar(select(Prescription).where(Prescription.consultation_id == consult.id))
+    return {
+        "id": str(consult.id), "status": consult.status.value,
+        "doctorId": str(consult.doctor_id) if consult.doctor_id else None,
+        "bookedFor": consult.booked_for,
+        "prescriptionId": str(pres.id) if pres else None,
+    }
 
 
 def book(db: Session, consult: Consultation, doctor_id, slot: str) -> Consultation:

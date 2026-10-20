@@ -22,3 +22,11 @@ class QueueItemOut(BaseModel):
     complaint: str
     bookedFor: str
     triage: TriageResultOut
+
+
+class ConsultationDetailOut(BaseModel):
+    id: str
+    status: str
+    doctorId: str | None = None
+    bookedFor: str | None = None
+    prescriptionId: str | None = None
