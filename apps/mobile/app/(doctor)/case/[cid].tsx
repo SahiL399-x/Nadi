@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { NadiNote } from '@/components/NadiNote';
+import { NotesPanel } from '@/components/NotesPanel';
 import { useQueue } from '@/features/doctor/useQueue';
 import type { QueueItem } from '@/api/schemas';
 import { colors, spacing, type as t } from '@/theme/tokens';
@@ -32,6 +33,7 @@ export default function DoctorCase() {
           ))}
         </Card>
       ) : null}
+      <NotesPanel consultationId={item.id} />
       <Button title="Start consultation" color={colors.navy}
         onPress={() => router.push({ pathname: '/(doctor)/room/[cid]', params: { cid: item.id } })} />
       <Button title="Write prescription" color={colors.navy}
