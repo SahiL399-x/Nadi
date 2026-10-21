@@ -53,6 +53,14 @@ export const api = {
     const data = await res.json();
     return schema ? schema.parse(data) : (data as T);
   },
+  async put<T>(path: string, body: unknown, schema?: z.ZodType<T>): Promise<T> {
+    const res = await request(path, {
+      method: 'PUT', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    return schema ? schema.parse(data) : (data as T);
+  },
 };
 
 export async function apiPutBytes(url: string, bytes: Blob, contentType: string): Promise<void> {
