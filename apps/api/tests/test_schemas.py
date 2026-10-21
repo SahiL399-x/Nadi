@@ -13,7 +13,7 @@ def test_triage_result_shape():
 def test_doctor_requires_camelcase_fields():
     d = DoctorOut(
         id="1", name="Dr A", specialty="Cardiology", qualifications="MBBS",
-        experienceYears=5, distanceKm=3.2, feeInr=400, rating=4.5,
+        experienceYears=5, distanceKm=3.2, lat=19.99, lng=73.79, feeInr=400, rating=4.5,
         reviewCount=12, languages=["Hindi"], nextSlot="10:00",
         photoUrl="x", availableSlots=["10:00", "10:30"],
     )

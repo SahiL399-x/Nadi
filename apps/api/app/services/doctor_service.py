@@ -1,4 +1,5 @@
 from geoalchemy2.functions import ST_Distance, ST_DWithin, ST_MakePoint, ST_SetSRID
+from geoalchemy2.types import Geometry
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -16,7 +17,12 @@ def _point(lat: float, lng: float):
     return func.cast(ST_SetSRID(ST_MakePoint(lng, lat), 4326), type_=Doctor.location.type)
 
 
-def _to_out(doctor: Doctor, name: str, distance_km: float) -> DoctorOut:
+def _lat_lng_cols():
+    geom = func.cast(Doctor.location, Geometry)
+    return func.ST_Y(geom), func.ST_X(geom)
+
+
+def _to_out(doctor: Doctor, name: str, distance_km: float, lat: float, lng: float) -> DoctorOut:
     return DoctorOut(
         id=str(doctor.user_id),
         name=name,
@@ -24,6 +30,8 @@ def _to_out(doctor: Doctor, name: str, distance_km: float) -> DoctorOut:
         qualifications=doctor.qualifications,
         experienceYears=doctor.experience_years,
         distanceKm=round(distance_km, 1),
+        lat=lat,
+        lng=lng,
         feeInr=doctor.fee_inr,
         rating=doctor.rating,
         reviewCount=doctor.review_count,
@@ -39,7 +47,8 @@ def search(
 ) -> list[DoctorOut]:
     pt = _point(lat, lng)
     dist = ST_Distance(Doctor.location, pt)
-    stmt = select(Doctor, User.name, dist).join(User, User.id == Doctor.user_id)
+    lat_col, lng_col = _lat_lng_cols()
+    stmt = select(Doctor, User.name, dist, lat_col, lng_col).join(User, User.id == Doctor.user_id)
     stmt = stmt.where(ST_DWithin(Doctor.location, pt, radius_km * 1000))
     if specialty:
         stmt = stmt.where(Doctor.specialty == specialty)
@@ -47,19 +56,23 @@ def search(
         stmt = stmt.where(Doctor.languages.any(_LANG_NAMES.get(lang, lang)))
     stmt = stmt.order_by(dist.asc())
     rows = db.execute(stmt).all()
-    return [_to_out(d, name, d_m / 1000.0) for (d, name, d_m) in rows]
+    return [
+        _to_out(d, name, d_m / 1000.0, d_lat, d_lng)
+        for (d, name, d_m, d_lat, d_lng) in rows
+    ]
 
 
 def get(db: Session, doctor_id: str) -> DoctorOut | None:
+    lat_col, lng_col = _lat_lng_cols()
     row = db.execute(
-        select(Doctor, User.name)
+        select(Doctor, User.name, lat_col, lng_col)
         .join(User, User.id == Doctor.user_id)
         .where(Doctor.user_id == doctor_id)
     ).first()
     if row is None:
         return None
-    doctor, name = row
-    return _to_out(doctor, name, 0.0)
+    doctor, name, lat, lng = row
+    return _to_out(doctor, name, 0.0, lat, lng)
 
 
 def profile(db: Session, doctor_id) -> DoctorProfileOut | None:

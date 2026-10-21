@@ -8,6 +8,8 @@ class DoctorOut(BaseModel):
     qualifications: str
     experienceYears: int
     distanceKm: float
+    lat: float
+    lng: float
     feeInr: int
     rating: float
     reviewCount: int

@@ -28,3 +28,14 @@ def test_new_user_cannot_self_assign_privileged_role(client):
     )
     assert r.status_code == 200
     assert r.json()["role"] == "patient"
+
+
+def test_refresh_returns_role_and_user(client):
+    client.post("/v1/auth/request-otp", json={"phone": "+919999900050"})
+    tok = client.post("/v1/auth/verify-otp",
+        json={"phone": "+919999900050", "code": "123456", "role": "patient", "name": "R"}).json()
+    r = client.post("/v1/auth/refresh", json={"refreshToken": tok["refreshToken"]})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["role"] == "patient"
+    assert body["userId"]

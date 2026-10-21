@@ -12,6 +12,7 @@ _STATUS_LABEL = {
 
 class AppointmentOut(BaseModel):
     id: str
+    patientId: str
     patientName: str
     patientAge: int
     patientSex: str

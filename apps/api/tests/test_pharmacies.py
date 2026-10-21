@@ -40,3 +40,13 @@ def test_decline_forwards_to_next_pharmacy(client, db):
     assert r.json()["forwarded"] is True
     inbox2 = client.get("/v1/pharmacy/inbox", headers={"Authorization": f"Bearer {t2}"}).json()
     assert len(inbox2) == 1
+
+
+def test_list_pharmacies_returns_seeded_sorted_by_distance(client):
+    r = client.get("/v1/pharmacies", params={"lat": 19.9975, "lng": 73.7898, "radiusKm": 50})
+    assert r.status_code == 200
+    rows = r.json()
+    assert len(rows) >= 5
+    dists = [p["distanceKm"] for p in rows]
+    assert dists == sorted(dists)
+    assert {"id", "name", "distanceKm", "deliversInMins", "isOpen"} <= set(rows[0].keys())

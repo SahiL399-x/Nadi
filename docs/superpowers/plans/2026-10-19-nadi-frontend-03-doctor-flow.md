@@ -6,7 +6,9 @@
 
 **Architecture:** Thin expo-router screens under `app/(doctor)/`; network in `src/api/doctor.ts`; React Query polling for the queue. The queue item already embeds the full `TriageResult`, so the patient-file screen renders entirely from the cached queue item — no extra per-consultation fetch needed. No backend changes in this plan.
 
-**Tech Stack:** Plan 01/02 stack; `@shopify/flash-list` for the queue; `expo-web-browser` + `roomUrl` (Plan 02) for video.
+**Tech Stack:** Plan 01/02 stack; `@shopify/flash-list` for the queue; the shared `JitsiRoom` component + `roomName` (Plan 02 Task 12, amended) for in-app video.
+
+> **Amended 2026-10-20:** the doctor joins the consultation with the same in-app Jitsi `JitsiRoom` the patient uses (Plan 02 Task 12), not an `expo-web-browser` redirect. Task 3's "Start consultation" now navigates to a doctor room screen (Task 6).
 
 ## Global Constraints
 
@@ -222,7 +224,7 @@ git commit -m "add doctor queue screen"
 - Test: `apps/mobile/src/components/__tests__/NadiNote.test.tsx`
 
 **Interfaces:**
-- Consumes: the cached `QueueItem` (`['queueItem', cid]`), falling back to a queue re-fetch; `roomUrl`.
+- Consumes: the cached `QueueItem` (`['queueItem', cid]`), falling back to a queue re-fetch; navigates to the doctor room screen (Task 6) for video.
 - Produces: `NadiNote({ triage })` — the distinctly-styled card showing acuity + confidence %, recommended specialty, and drivers; patient-file screen with the note, a lab table, and three actions (join consultation / prescribe / refer).
 
 - [ ] **Step 1: Write the failing test**
@@ -282,13 +284,11 @@ export function NadiNote({ triage }: { triage: TriageResult }) {
 `apps/mobile/app/(doctor)/case/[cid].tsx` (reads the cached queue item; uses `useQueue` as fallback):
 ```tsx
 import { ScrollView, Text, View } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button, Card } from '@/components/ui';
 import { NadiNote } from '@/components/NadiNote';
 import { useQueue } from '@/features/doctor/useQueue';
-import { roomUrl } from '@/lib/room';
 import type { QueueItem } from '@/api/schemas';
 import { colors, spacing, type as t } from '@/theme/tokens';
 
@@ -316,7 +316,8 @@ export default function DoctorCase() {
           ))}
         </Card>
       ) : null}
-      <Button title="Start consultation" onPress={() => WebBrowser.openBrowserAsync(roomUrl(item.id))} />
+      <Button title="Start consultation" color={colors.navy}
+        onPress={() => router.push({ pathname: '/(doctor)/room/[cid]', params: { cid: item.id } })} />
       <Button title="Write prescription" color={colors.navy}
         onPress={() => router.push({ pathname: '/(doctor)/prescribe/[cid]', params: { cid: item.id } })} />
       <Button title="Refer to another specialty" variant="ghost" color={colors.navy}
@@ -519,9 +520,45 @@ git commit -m "add doctor refer screen"
 
 ---
 
+### Task 6: Doctor consultation room (in-app Jitsi)
+
+The doctor joins the same deterministic room the patient joins, reusing the shared `JitsiRoom` built in Plan 02 Task 12. No new SDK work — the install/config landed in Plan 02.
+
+**Files:**
+- Create: `apps/mobile/app/(doctor)/room/[cid].tsx`
+
+**Interfaces:**
+- Consumes: `JitsiRoom` (Plan 02 Task 12), `useSession`.
+- Produces: a doctor room screen at `/(doctor)/room/[cid]` that embeds the consultation `nadi-<cid>` room and returns to the case screen on close.
+
+- [ ] **Step 1: Build the screen**
+
+`apps/mobile/app/(doctor)/room/[cid].tsx`:
+```tsx
+import { router, useLocalSearchParams } from 'expo-router';
+import { JitsiRoom } from '@/components/JitsiRoom';
+import { useSession } from '@/store/session';
+
+export default function DoctorRoom() {
+  const { cid } = useLocalSearchParams<{ cid: string }>();
+  const userId = useSession((s) => s.userId);
+  return <JitsiRoom consultationId={cid!} displayName={`Doctor ${userId ?? ''}`.trim()} onClose={() => router.back()} />;
+}
+```
+
+- [ ] **Step 2: Run + commit**
+
+Run: `npm test && npm run typecheck`
+```bash
+git add apps/mobile/app/(doctor)/room
+git commit -m "add doctor consultation room screen"
+```
+
+---
+
 ## Verification (end of Plan 03)
 
 - `cd apps/mobile && npm test && npm run typecheck` — green.
-- Device: log in as the seeded demo doctor `+915000000001` → queue shows the six seeded cases, acuity-sorted, emergency with a red left border → open a case → NADI Note + labs render → write a prescription → it now appears on the patient's prescription screen (Plan 02) when the patient polls. Cross-device sync confirmed.
+- Device: log in as the seeded demo doctor `+915000000001` → queue shows the six seeded cases, acuity-sorted, emergency with a red left border → open a case → NADI Note + labs render → tap **Start consultation** → the in-app Jitsi room `nadi-<cid>` opens (same room the patient joins) → write a prescription → it now appears on the patient's prescription screen (Plan 02) when the patient polls. Cross-device sync + shared video room confirmed.
 
-**Next plan:** `04-pharmacy-flow` — inbox, order detail, accept/decline + forwarding, then the full 3-phone verification script and the low-end-device smoothness gate.
+**Next plan:** `04-pharmacy-flow` — inbox, order detail, accept/decline + forwarding, then the full 3-phone verification script and the low-end-device smoothness gate. (The richer doctor and pharmacy portals are built in Plans `05-doctor-portal` and `06-pharmacy-portal`.)

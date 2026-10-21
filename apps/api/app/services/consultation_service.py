@@ -4,7 +4,7 @@ from datetime import date
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import Consultation, ConsultationStatus, Patient, Report, TriageResult, User
+from app.models import Consultation, ConsultationStatus, Patient, Prescription, Report, TriageResult, User
 from app.schemas.appointment import AppointmentOut, status_label
 from app.schemas.common import TriageInput, TriageResultOut
 from app.schemas.consultation import QueueItemOut
@@ -94,6 +94,16 @@ def get_triage(db: Session, consultation_id) -> TriageResult | None:
     return db.scalar(select(TriageResult).where(TriageResult.consultation_id == consultation_id))
 
 
+def detail(db: Session, consult: Consultation) -> dict:
+    pres = db.scalar(select(Prescription).where(Prescription.consultation_id == consult.id))
+    return {
+        "id": str(consult.id), "status": consult.status.value,
+        "doctorId": str(consult.doctor_id) if consult.doctor_id else None,
+        "bookedFor": consult.booked_for,
+        "prescriptionId": str(pres.id) if pres else None,
+    }
+
+
 def book(db: Session, consult: Consultation, doctor_id, slot: str) -> Consultation:
     consult.doctor_id = doctor_id
     consult.booked_for = slot
@@ -123,6 +133,7 @@ def doctor_queue(db: Session, doctor_id) -> list[QueueItemOut]:
     items = [
         QueueItemOut(
             id=str(consult.id),
+            patientId=str(consult.patient_id),
             patientName=patient_user.name,
             patientAge=(patient.age if patient and patient.age is not None else 0),
             patientSex=(patient.sex if patient and patient.sex else "O"),
@@ -164,6 +175,7 @@ def doctor_appointments(db: Session, doctor_id, on: date | None) -> list[Appoint
         out.append(
             AppointmentOut(
                 id=str(c.id),
+                patientId=str(c.patient_id),
                 patientName=user.name,
                 patientAge=(patient.age if patient and patient.age is not None else 0),
                 patientSex=(patient.sex if patient and patient.sex else "O"),

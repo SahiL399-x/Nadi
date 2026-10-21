@@ -34,3 +34,16 @@ def test_intake_then_triage_emergency(client, patient_token, monkeypatch):
     assert t.json()["acuity"] == "EMERGENCY"
     assert t.json()["redFlags"]
     assert t.json()["modelVersion"] == "stub-keyword-v0"
+
+
+def test_get_consultation_returns_detail_with_prescription_id(client, patient_token):
+    h = {"Authorization": f"Bearer {patient_token}"}
+    intake = client.post("/v1/consultations/intake",
+        json={"symptomText": "fever and cough", "reportImageUris": [], "lang": "en"}, headers=h)
+    cid = intake.json()["consultationId"]
+    r = client.get(f"/v1/consultations/{cid}", headers=h)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["id"] == cid
+    assert body["status"] in ("TRIAGED", "BOOKED", "PENDING")
+    assert "prescriptionId" in body

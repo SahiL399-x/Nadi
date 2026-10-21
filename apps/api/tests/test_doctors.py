@@ -26,3 +26,13 @@ def test_search_orders_by_distance(client, db):
     assert r.status_code == 200
     names = [d["name"] for d in r.json()]
     assert names.index("Dr Near") < names.index("Dr Far")
+
+
+def test_search_returns_coordinates(client, db):
+    _make_doctor(db, "Dr Geo", "Dermatology", 19.99, 73.79, 300)
+    r = client.get("/v1/doctors", params={"specialty": "Dermatology",
+                                          "lat": 19.9975, "lng": 73.7898, "radiusKm": 100})
+    assert r.status_code == 200
+    doc = r.json()[0]
+    assert round(doc["lat"], 2) == 19.99
+    assert round(doc["lng"], 2) == 73.79

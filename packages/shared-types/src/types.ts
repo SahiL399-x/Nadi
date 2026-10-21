@@ -15,12 +15,12 @@ export interface TriageResult {
 }
 export interface Doctor {
   id: string; name: string; specialty: string; qualifications: string;
-  experienceYears: number; distanceKm: number; feeInr: number; rating: number;
+  experienceYears: number; distanceKm: number; lat: number; lng: number; feeInr: number; rating: number;
   reviewCount: number; languages: string[]; nextSlot: string;
   photoUrl: string; availableSlots: string[];
 }
 export interface QueueItem {
-  id: string; patientName: string; patientAge: number; patientSex: 'M' | 'F' | 'O';
+  id: string; patientId: string; patientName: string; patientAge: number; patientSex: 'M' | 'F' | 'O';
   acuity: Acuity; complaint: string; bookedFor: string; triage: TriageResult;
 }
 export interface PrescriptionLine {
@@ -39,7 +39,7 @@ export interface Pharmacy {
 export type AppointmentStatus = 'Upcoming' | 'Arrived' | 'In Progress' | 'Completed';
 
 export interface Appointment {
-  id: string; patientName: string; patientAge: number; patientSex: 'M' | 'F' | 'O';
+  id: string; patientId: string; patientName: string; patientAge: number; patientSex: 'M' | 'F' | 'O';
   photoUrl: string; time: string; status: AppointmentStatus;
   acuity: Acuity | null; complaint: string;
 }

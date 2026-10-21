@@ -6,7 +6,7 @@
 
 **Architecture:** Screens are thin expo-router routes; all network logic lives in `src/api/patient.ts` and `src/lib/`. Server reads go through React Query with `pollInterval` (Plan 01) for the cross-device sync points (triage, prescription, prescription status). Two backend endpoints are added: `GET /v1/consultations/{id}` (implementing a frozen-contract endpoint that was never built) and `GET /v1/pharmacies` (a new endpoint requiring ADR-0004).
 
-**Tech Stack:** Everything from Plan 01, plus `expo-image-picker`, `expo-image-manipulator`, `expo-web-browser`, `@shopify/flash-list`, `@maplibre/maplibre-react-native`.
+**Tech Stack:** Everything from Plan 01, plus `expo-image-picker`, `expo-image-manipulator`, `@shopify/flash-list`, `@maplibre/maplibre-react-native`, and `@jitsi/react-native-sdk` for in-app video (Task 12; `expo-web-browser` is kept only as the automatic fallback).
 
 ## Global Constraints
 
@@ -1475,72 +1475,159 @@ git commit -m "add doctor detail and booking screens"
 
 ---
 
-### Task 12: Consultation (jit.si) & room helper
+### Task 12: Consultation — in-app Jitsi video + room helper
+
+> **Amended 2026-10-20 (supersedes the earlier `expo-web-browser` redirect).** Per [[nadi-backend-expansion]] §3, the demo uses **in-app Jitsi** via `@jitsi/react-native-sdk` embedded in the Consultation screen (free public `meet.jit.si` rooms, no key/billing), with the browser kept only as an automatic **fallback** when the native SDK is unavailable. The shared `JitsiRoom` component and `roomName`/`roomUrl` helpers built here are reused by the doctor side (Plan 03 Task 6). Like MapLibre, this needs a native dev build (`expo prebuild`), not Expo Go.
 
 **Files:**
 - Create: `apps/mobile/src/lib/room.ts`
+- Create: `apps/mobile/src/components/JitsiRoom.tsx`
 - Create: `apps/mobile/app/(patient)/consultation.tsx`
+- Modify: `apps/mobile/app.json` (config plugins for WebRTC + camera/mic permissions)
 - Test: `apps/mobile/src/lib/__tests__/room.test.ts`
 
 **Interfaces:**
-- Produces: `roomUrl(consultationId): string` → `https://meet.jit.si/nadi-<id>`; consultation screen opens it via `expo-web-browser` (reliable camera/mic on Android via the system Custom Tab — chosen over an in-app WebView, which commonly blocks `getUserMedia`; satisfies spec §4's "join the room", with the browser as the robust default).
+- Produces: `roomName(consultationId): string` → `nadi-<id>` (the Jitsi room name) and `roomUrl(consultationId): string` → `https://meet.jit.si/nadi-<id>` (the browser-fallback URL); `JitsiRoom({ consultationId, displayName, onClose })` — an in-app embedded Jitsi conference with a browser fallback; the patient consultation screen renders it.
 
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 1: Write the failing test** (the room helpers are the pure, unit-testable surface; `JitsiRoom` is native and verified on-device, like MapLibre)
 
 `apps/mobile/src/lib/__tests__/room.test.ts`:
 ```ts
-import { roomUrl } from '@/lib/room';
-test('builds a stable per-consultation room url', () => {
+import { roomName, roomUrl } from '@/lib/room';
+test('builds a stable per-consultation room name and url', () => {
+  expect(roomName('abc-123')).toBe('nadi-abc-123');
   expect(roomUrl('abc-123')).toBe('https://meet.jit.si/nadi-abc-123');
 });
 ```
 
 - [ ] **Step 2: Run to verify it fails** → `npm test -- room` FAIL.
 
-- [ ] **Step 3: Implement**
+- [ ] **Step 3: Implement the room helpers**
 
 `apps/mobile/src/lib/room.ts`:
 ```ts
+export function roomName(consultationId: string): string {
+  return `nadi-${consultationId}`;
+}
 export function roomUrl(consultationId: string): string {
-  return `https://meet.jit.si/nadi-${consultationId}`;
+  return `https://meet.jit.si/${roomName(consultationId)}`;
 }
 ```
-`apps/mobile/app/(patient)/consultation.tsx`:
+
+- [ ] **Step 4: Run to verify it passes** → `npm test -- room` PASS.
+
+- [ ] **Step 5: Install the Jitsi SDK + its native peers and config plugins**
+
+```bash
+cd apps/mobile
+npm install @jitsi/react-native-sdk
+npx expo install react-native-webrtc @react-native-async-storage/async-storage \
+  react-native-background-timer @react-native-community/netinfo \
+  react-native-get-random-values react-native-pager-view react-native-keep-awake \
+  @react-native-community/slider react-native-svg-transformer
+npm install -D @config-plugins/react-native-webrtc
+```
+(`@jitsi/react-native-sdk` declares the above as peer dependencies; installing them is required for the native build to link. `react-native-svg` is already present from Plan 02 Task 6.)
+
+In `apps/mobile/app.json`, add the WebRTC config plugin (it injects the camera/mic permissions and the required native build settings) to the `expo.plugins` array, and set iOS usage strings (harmless on Android, correct if ever run on iOS):
+```json
+{
+  "expo": {
+    "plugins": [
+      "expo-router",
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "cameraPermission": "NADI needs the camera for your video consultation.",
+          "microphonePermission": "NADI needs the microphone for your video consultation."
+        }
+      ]
+    ],
+    "ios": { "infoPlist": {
+      "NSCameraUsageDescription": "NADI needs the camera for your video consultation.",
+      "NSMicrophoneUsageDescription": "NADI needs the microphone for your video consultation."
+    } },
+    "android": { "permissions": ["CAMERA", "RECORD_AUDIO", "MODIFY_AUDIO_SETTINGS"] }
+  }
+}
+```
+Keep any existing `plugins`/`scheme`/config already present — **merge**, do not overwrite. Then regenerate native projects: `npx expo prebuild --clean`.
+
+- [ ] **Step 6: Build the shared JitsiRoom component (with browser fallback)**
+
+`apps/mobile/src/components/JitsiRoom.tsx` — embeds the conference; if the native SDK can't be loaded (e.g. running under Expo Go, or the module failed to link), it degrades to an in-app "Open in browser" action using the same room, so there is never a silent dead end (spec §4; backend-expansion §3 fallback):
 ```tsx
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
-import { useLocalSearchParams } from 'expo-router';
 import { Button } from '@/components/ui';
-import { roomUrl } from '@/lib/room';
+import { roomName, roomUrl } from '@/lib/room';
 import { colors, spacing, type as t } from '@/theme/tokens';
 
-export default function Consultation() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const [error, setError] = useState<string | null>(null);
-  const join = async () => {
-    try { await WebBrowser.openBrowserAsync(roomUrl(id!)); }
-    catch { setError('Could not open the video call.'); }
+// Load the native SDK defensively so the screen still works (via browser) when it is absent.
+let JitsiMeeting: React.ComponentType<Record<string, unknown>> | null = null;
+try { JitsiMeeting = require('@jitsi/react-native-sdk').JitsiMeeting; } catch { JitsiMeeting = null; }
+
+type Props = { consultationId: string; displayName: string; onClose: () => void };
+
+export function JitsiRoom({ consultationId, displayName, onClose }: Props) {
+  const [browserError, setBrowserError] = useState<string | null>(null);
+  const openInBrowser = async () => {
+    try { await WebBrowser.openBrowserAsync(roomUrl(consultationId)); }
+    catch { setBrowserError('Could not open the video call.'); }
   };
+
+  if (!JitsiMeeting) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', padding: spacing.xl, gap: spacing.md }}>
+        <Text style={{ fontSize: t.h2, color: colors.text, fontWeight: '700' }}>Video consultation</Text>
+        <Text style={{ fontSize: t.sm, color: colors.textMuted }}>
+          In-app video needs the installed dev build. Open the secure room in your browser instead.
+        </Text>
+        <Button title="Open video in browser" onPress={openInBrowser} />
+        {browserError ? <Text style={{ color: colors.emergency, fontSize: t.sm }}>{browserError}</Text> : null}
+      </View>
+    );
+  }
+
+  const Meeting = JitsiMeeting;
   return (
-    <View style={{ flex: 1, justifyContent: 'center', padding: spacing.xl, gap: spacing.md }}>
-      <Text style={{ fontSize: t.h2, color: colors.text, fontWeight: '700' }}>Video consultation</Text>
-      <Text style={{ fontSize: t.sm, color: colors.textMuted }}>
-        Your doctor joins the same secure room. Allow camera and microphone when asked.
-      </Text>
-      <Button title="Join video call" onPress={join} />
-      {error ? <Text style={{ color: colors.emergency, fontSize: t.sm }}>{error}</Text> : null}
+    <View style={{ flex: 1 }}>
+      <Meeting
+        style={{ flex: 1 }}
+        room={roomName(consultationId)}
+        serverURL="https://meet.jit.si/"
+        userInfo={{ displayName, email: '' }}
+        config={{ subject: 'NADI consultation', startWithAudioMuted: false, startWithVideoMuted: false }}
+        flags={{ 'invite.enabled': false, 'meeting-password.enabled': false, 'pip.enabled': true }}
+        eventListeners={{ onReadyToClose: onClose }}
+      />
     </View>
   );
 }
 ```
 
-- [ ] **Step 4: Run + commit**
+- [ ] **Step 7: Build the patient consultation screen**
+
+`apps/mobile/app/(patient)/consultation.tsx`:
+```tsx
+import { router, useLocalSearchParams } from 'expo-router';
+import { JitsiRoom } from '@/components/JitsiRoom';
+import { useSession } from '@/store/session';
+
+export default function Consultation() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const userId = useSession((s) => s.userId);
+  return <JitsiRoom consultationId={id!} displayName={`Patient ${userId ?? ''}`.trim()} onClose={() => router.back()} />;
+}
+```
+
+- [ ] **Step 8: Run + commit**
 
 Run: `npm test -- room && npm run typecheck`
 ```bash
-git add apps/mobile/src/lib/room.ts apps/mobile/app/(patient)/consultation.tsx apps/mobile/src/lib/__tests__/room.test.ts
-git commit -m "add jit.si consultation screen"
+git add apps/mobile/src/lib/room.ts apps/mobile/src/components/JitsiRoom.tsx apps/mobile/app/(patient)/consultation.tsx apps/mobile/app.json apps/mobile/package.json apps/mobile/src/lib/__tests__/room.test.ts
+git commit -m "add in-app jitsi consultation screen"
 ```
 
 ---

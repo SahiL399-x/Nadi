@@ -7,7 +7,7 @@ from app.core.db import get_db
 from app.core.deps import get_current_user, require_role
 from app.models import User
 from app.schemas.common import TriageInput, TriageResultOut
-from app.schemas.consultation import BookIn, IntakeOut
+from app.schemas.consultation import BookIn, ConsultationDetailOut, IntakeOut
 from app.schemas.note import NoteIn, NoteOut
 from app.services import audit_service, consultation_service, note_service
 
@@ -75,3 +75,12 @@ def list_notes(
     if not note_service.can_access(db, consultation_id, user):
         raise HTTPException(status_code=404, detail="not found")
     return note_service.list_for(db, consultation_id, user.id)
+
+
+@router.get("/{consultation_id}", response_model=ConsultationDetailOut)
+def get_consultation(consultation_id: str, user: User = Depends(require_role("patient")),
+                     db: Session = Depends(get_db)) -> ConsultationDetailOut:
+    consult = consultation_service.get_owned(db, consultation_id, user.id)
+    if consult is None:
+        raise HTTPException(status_code=404, detail="not found")
+    return ConsultationDetailOut(**consultation_service.detail(db, consult))
