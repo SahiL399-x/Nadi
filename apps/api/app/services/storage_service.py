@@ -2,6 +2,7 @@ from functools import lru_cache
 
 import boto3
 from botocore.client import Config
+from botocore.exceptions import ClientError
 
 from app.core.config import settings
 
@@ -23,3 +24,13 @@ def presign_put(object_key: str) -> str:
         Params={"Bucket": settings.s3_bucket, "Key": object_key},
         ExpiresIn=300,
     )
+
+
+def ensure_bucket() -> None:
+    """Create the reports bucket if it does not exist, so a fresh stack accepts
+    report uploads with no manual MinIO setup. Idempotent; called on API startup."""
+    client = _client()
+    try:
+        client.head_bucket(Bucket=settings.s3_bucket)
+    except ClientError:
+        client.create_bucket(Bucket=settings.s3_bucket)

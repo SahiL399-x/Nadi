@@ -1,6 +1,12 @@
+# NADI backend stack — one command brings up everything the app needs.
+# From repo root:  make up   (or: docker compose -f infra/docker-compose.yml up -d)
+# The api container auto-runs migrations + demo seed on first boot (entrypoint.sh)
+# and provisions the MinIO bucket report-upload needs on startup (ensure_bucket),
+# so a fresh `up` against empty volumes yields a fully working, seeded backend.
 services:
   db:
     image: postgis/postgis:16-3.4
+    restart: unless-stopped
     environment:
       POSTGRES_USER: nadi
       POSTGRES_PASSWORD: nadi
@@ -12,26 +18,57 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
   minio:
     image: minio/minio
+    restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: nadi
       MINIO_ROOT_PASSWORD: nadi12345
     ports: ["9000:9000", "9001:9001"]
     volumes: ["nadi_minio:/data"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   ml-service:
     build: ../apps/ml-service
+    restart: unless-stopped
     ports: ["8001:8001"]
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost:8001/ml/v1/health').status==200 else 1)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   api:
     build: ../apps/api
+    restart: unless-stopped
     depends_on:
       db: {condition: service_healthy}
+      minio: {condition: service_healthy}
+      ml-service: {condition: service_healthy}
     environment:
       DATABASE_URL: postgresql+psycopg://nadi:nadi@db:5432/nadi
       ML_SERVICE_URL: http://ml-service:8001
-      S3_ENDPOINT: http://minio:9000
+      # Host MinIO signs presigned upload URLs against this endpoint. The default
+      # works container-to-container; for the 3-phone LAN demo the phones must be
+      # able to reach it, so override it with the laptop's LAN IP, e.g.
+      #   S3_ENDPOINT=http://192.168.1.50:9000 docker compose -f infra/docker-compose.yml up -d
+      # (or set S3_ENDPOINT in infra/.env — see infra/.env.example).
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
     ports: ["8000:8000"]
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
 volumes:
   nadi_db:
   nadi_minio:
