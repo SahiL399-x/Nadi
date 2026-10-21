@@ -15,6 +15,12 @@ class Settings(BaseSettings):
     s3_secret: str = "nadi12345"
     s3_bucket: str = "nadi-reports"
     otp_stub_code: str = "123456"
+    # LiveKit (in-app video). Key/secret match the self-hosted dev server in
+    # infra/docker-compose.yml. livekit_url is handed to the client, so for the
+    # LAN demo override it with the laptop's LAN IP (ws://<ip>:7880).
+    livekit_url: str = "ws://localhost:7880"
+    livekit_api_key: str = "devkey"
+    livekit_api_secret: str = "nadidevsecret0123456789abcdef0123456789"
 
 
 settings = Settings()

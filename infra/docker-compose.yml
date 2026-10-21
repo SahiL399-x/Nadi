@@ -34,6 +34,20 @@ services:
       timeout: 5s
       retries: 10
 
+  # Self-hosted LiveKit SFU for in-app video. The API only signs join tokens
+  # (no runtime dependency on this service), so it starts independently. Phones
+  # connect straight to it, so --node-ip must be the laptop's LAN IP for the demo.
+  livekit:
+    image: livekit/livekit-server:latest
+    restart: unless-stopped
+    command: --config /etc/livekit.yaml --node-ip ${LIVEKIT_NODE_IP:-192.168.0.104}
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml:ro
+    ports:
+      - "7880:7880"
+      - "7881:7881"
+      - "50000-50019:50000-50019/udp"
+
   ml-service:
     build: ../apps/ml-service
     restart: unless-stopped
@@ -61,6 +75,9 @@ services:
       #   S3_ENDPOINT=http://192.168.1.50:9000 docker compose -f infra/docker-compose.yml up -d
       # (or set S3_ENDPOINT in infra/.env — see infra/.env.example).
       S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
+      # Handed to the app so phones know where to reach LiveKit. Must be the
+      # laptop's LAN IP for the demo (same IP as LIVEKIT_NODE_IP above).
+      LIVEKIT_URL: ${LIVEKIT_URL:-ws://192.168.0.104:7880}
     ports: ["8000:8000"]
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)\""]

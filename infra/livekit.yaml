@@ -1,0 +1,13 @@
+# Self-hosted LiveKit server for the NADI demo ($0, offline-capable).
+# Keys MUST match apps/api config (livekit_api_key / livekit_api_secret).
+port: 7880
+rtc:
+  tcp_port: 7881
+  # Small published UDP range for WebRTC media (see docker-compose port mapping).
+  port_range_start: 50000
+  port_range_end: 50019
+  # On a flat LAN we advertise the host's LAN IP via --node-ip (compose command),
+  # not a STUN-discovered public IP.
+  use_external_ip: false
+keys:
+  devkey: nadidevsecret0123456789abcdef0123456789

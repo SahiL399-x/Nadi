@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 from app.routers import (
     auth, consultations, doctor_portal, doctors, medicines, pharmacies, prescriptions, uploads,
+    video,
 )
 from app.services.storage_service import ensure_bucket
 
@@ -30,6 +31,7 @@ app.include_router(pharmacies.router)
 app.include_router(pharmacies.list_router)
 app.include_router(uploads.router)
 app.include_router(medicines.router)
+app.include_router(video.router)
 
 
 @app.get("/health")
