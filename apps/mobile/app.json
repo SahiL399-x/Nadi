@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "mobile",
+    "name": "NADI",
     "slug": "mobile",
     "scheme": "nadi",
     "version": "1.0.0",
@@ -15,6 +15,7 @@
       }
     },
     "android": {
+      "package": "com.nadi.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
