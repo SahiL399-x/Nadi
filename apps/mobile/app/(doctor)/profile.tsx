@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -11,7 +11,12 @@ export default function ProfileScreen() {
   const { profile, isLoading, save, saving } = useDoctorProfile();
   const [clinic, setClinic] = useState('');
   const [about, setAbout] = useState('');
-  useEffect(() => { if (profile) { setClinic(profile.clinicAddress); setAbout(profile.about); } }, [profile]);
+  // Seed editable fields from server data once; a refetch on refocus must not
+  // discard the doctor's in-progress unsaved edits.
+  const loaded = useRef(false);
+  useEffect(() => {
+    if (profile && !loaded.current) { setClinic(profile.clinicAddress); setAbout(profile.about); loaded.current = true; }
+  }, [profile]);
   if (isLoading || !profile) return <View style={{ padding: spacing.lg }}><Skeleton height={200} /></View>;
   return (
     <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
