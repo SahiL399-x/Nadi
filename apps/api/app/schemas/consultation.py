@@ -15,6 +15,7 @@ class BookIn(BaseModel):
 
 class QueueItemOut(BaseModel):
     id: str
+    patientId: str
     patientName: str
     patientAge: int
     patientSex: str

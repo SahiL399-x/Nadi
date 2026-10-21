@@ -33,3 +33,16 @@ def test_queue_sorted_emergency_first(client, db):
     r = client.get("/v1/doctor/queue", headers={"Authorization": f"Bearer {token}"})
     assert r.status_code == 200
     assert r.json()[0]["acuity"] == "EMERGENCY"
+
+
+def test_appointments_expose_patient_id(client, doctor_token):
+    h = {"Authorization": f"Bearer {doctor_token}"}
+    rows = client.get("/v1/doctor/appointments", headers=h).json()
+    assert rows, "seed should give the demo doctor appointments"
+    assert all(r.get("patientId") for r in rows)
+
+
+def test_queue_items_expose_patient_id(client, doctor_token):
+    h = {"Authorization": f"Bearer {doctor_token}"}
+    rows = client.get("/v1/doctor/queue", headers=h).json()
+    assert all("patientId" in r for r in rows)

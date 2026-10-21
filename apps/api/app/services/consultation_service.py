@@ -133,6 +133,7 @@ def doctor_queue(db: Session, doctor_id) -> list[QueueItemOut]:
     items = [
         QueueItemOut(
             id=str(consult.id),
+            patientId=str(consult.patient_id),
             patientName=patient_user.name,
             patientAge=(patient.age if patient and patient.age is not None else 0),
             patientSex=(patient.sex if patient and patient.sex else "O"),
@@ -174,6 +175,7 @@ def doctor_appointments(db: Session, doctor_id, on: date | None) -> list[Appoint
         out.append(
             AppointmentOut(
                 id=str(c.id),
+                patientId=str(c.patient_id),
                 patientName=user.name,
                 patientAge=(patient.age if patient and patient.age is not None else 0),
                 patientSex=(patient.sex if patient and patient.sex else "O"),

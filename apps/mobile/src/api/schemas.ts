@@ -30,7 +30,7 @@ export const DoctorSchema = z.object({
 });
 
 export const QueueItemSchema = z.object({
-  id: z.string(), patientName: z.string(), patientAge: z.number(),
+  id: z.string(), patientId: z.string(), patientName: z.string(), patientAge: z.number(),
   patientSex: z.enum(['M', 'F', 'O']), acuity: AcuitySchema, complaint: z.string(),
   bookedFor: z.string(), triage: TriageResultSchema,
 });
