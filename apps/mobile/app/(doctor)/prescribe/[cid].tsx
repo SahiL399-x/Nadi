@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { MedicineAutocomplete } from '@/components/MedicineAutocomplete';
 import { usePrescribe } from '@/features/doctor/usePrescribe';
 import type { PrescriptionLineInput } from '@/api/doctor';
 import { colors, spacing, type as t } from '@/theme/tokens';
@@ -23,7 +24,9 @@ export default function Prescribe() {
       <Text style={{ fontSize: t.h2, fontWeight: '700', color: colors.text }}>New prescription</Text>
       {lines.map((l, i) => (
         <Card key={i}>
-          <Input value={l.drug} onChangeText={(v) => patch(i, { drug: v })} placeholder="Drug" />
+          <MedicineAutocomplete value={l.drug}
+            onChangeText={(v) => patch(i, { drug: v })}
+            onPick={(m) => patch(i, { drug: m.name, strength: m.strength })} />
           <Input value={l.strength} onChangeText={(v) => patch(i, { strength: v })} placeholder="Strength (e.g. 500mg)" />
           <Input value={l.frequency} onChangeText={(v) => patch(i, { frequency: v })} placeholder="Frequency (e.g. BD)" />
           <Input value={String(l.durationDays)} onChangeText={(v) => patch(i, { durationDays: Number(v) || 0 })} keyboardType="number-pad" placeholder="Days" />
