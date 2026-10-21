@@ -32,7 +32,6 @@
     "react-native-background-timer": "^2.4.1",
     "react-native-gesture-handler": "~3.3.0",
     "react-native-get-random-values": "^2.0.0",
-    "react-native-keep-awake": "^4.0.0",
     "react-native-pager-view": "9.0.7",
     "react-native-reanimated": "4.7.1",
     "react-native-safe-area-context": "~5.10.1",
