@@ -5,6 +5,7 @@ import { Search } from 'lucide-react-native';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { SpecialtyGrid } from '@/components/SpecialtyGrid';
+import { Logo } from '@/components/Logo';
 import { colors, radii, shadow, spacing, type as t } from '@/theme/tokens';
 
 type Lang = 'en' | 'hi' | 'mr';
@@ -23,9 +24,9 @@ export default function PatientHome() {
       style={{ backgroundColor: colors.pageBg }}
       contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl }}
     >
-      <View>
+      <View style={{ gap: 2 }}>
         <Text style={{ fontSize: t.sm, color: colors.textMuted }}>Welcome to</Text>
-        <Text style={{ fontSize: t.h1, color: colors.brightGreen, fontWeight: '800' }}>Nadi</Text>
+        <Logo width={120} />
       </View>
 
       {/* Search entry into the full doctor directory */}
