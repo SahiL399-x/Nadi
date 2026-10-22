@@ -33,6 +33,7 @@ def test_search_returns_coordinates(client, db):
     r = client.get("/v1/doctors", params={"specialty": "Dermatology",
                                           "lat": 19.9975, "lng": 73.7898, "radiusKm": 100})
     assert r.status_code == 200
-    doc = r.json()[0]
+    # The live demo doctor is pinned first on every search, so find ours by name.
+    doc = next(d for d in r.json() if d["name"] == "Dr Geo")
     assert round(doc["lat"], 2) == 19.99
     assert round(doc["lng"], 2) == 73.79

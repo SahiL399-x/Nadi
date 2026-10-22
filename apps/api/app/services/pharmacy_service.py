@@ -101,7 +101,19 @@ def search(db: Session, lat: float, lng: float, radius_km: float) -> list[Pharma
                 isOpen=ph.is_open,
             )
         )
+    # Demo: pin the live demo pharmacy (friend's phone) to the top so the
+    # prescription -> pharmacy -> delivery flow is always available.
+    demo_user = db.scalar(select(User).where(User.phone == DEMO_PHARMACY_PHONE))
+    if demo_user is not None:
+        ph = db.get(Pharmacy, demo_user.id)
+        if ph is not None:
+            demo = PharmacyOut(id=str(ph.user_id), name=ph.name, distanceKm=0.3,
+                               deliversInMins=15, isOpen=True)
+            out = [demo] + [p for p in out if p.id != demo.id]
     return out
+
+
+DEMO_PHARMACY_PHONE = "+915000020000"
 
 
 def _next_consent(db: Session, prescription_id, after_rank: int) -> PharmacyConsent | None:

@@ -56,10 +56,32 @@ def search(
         stmt = stmt.where(Doctor.languages.any(_LANG_NAMES.get(lang, lang)))
     stmt = stmt.order_by(dist.asc())
     rows = db.execute(stmt).all()
-    return [
+    result = [
         _to_out(d, name, d_m / 1000.0, d_lat, d_lng)
         for (d, name, d_m, d_lat, d_lng) in rows
     ]
+    # Demo: the live demo doctor (friend's phone) is pinned to the top of every
+    # search so the end-to-end consultation flow can be shown for any speciality.
+    demo = _demo_doctor(db)
+    if demo is not None:
+        result = [demo] + [r for r in result if r.id != demo.id]
+    return result
+
+
+DEMO_DOCTOR_PHONE = "+915000000001"
+
+
+def _demo_doctor(db: Session) -> DoctorOut | None:
+    lat_col, lng_col = _lat_lng_cols()
+    row = db.execute(
+        select(Doctor, User.name, lat_col, lng_col)
+        .join(User, User.id == Doctor.user_id)
+        .where(User.phone == DEMO_DOCTOR_PHONE)
+    ).first()
+    if row is None:
+        return None
+    d, name, d_lat, d_lng = row
+    return _to_out(d, name, 0.3, d_lat, d_lng)
 
 
 def get(db: Session, doctor_id: str) -> DoctorOut | None:

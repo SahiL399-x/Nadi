@@ -268,7 +268,7 @@ def run(db) -> None:
     # a demo doctor to own the queue
     doc_uid = uuid.uuid4()
     db.add(
-        User(id=doc_uid, phone="+915000000001", role=Role.doctor, name="Dr. Demo Queue", lang="en")
+        User(id=doc_uid, phone="+915000000001", role=Role.doctor, name="Dr. Rajiv Sharma", lang="en")
     )
     db.flush()
     db.add(
