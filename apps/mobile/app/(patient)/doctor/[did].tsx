@@ -6,8 +6,6 @@ import { BadgeCheck, Star } from 'lucide-react-native';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useDoctor } from '@/features/patient/useDoctor';
-import { useBook } from '@/features/patient/useBook';
-import { ensureConsultation } from '@/api/patient';
 import { colors, radii, shadow, spacing, type as t } from '@/theme/tokens';
 
 function Stat({ label, value }: { label: string; value: string }) {
@@ -22,18 +20,15 @@ function Stat({ label, value }: { label: string; value: string }) {
 export default function DoctorDetail() {
   const { did, id } = useLocalSearchParams<{ did: string; id?: string }>();
   const { data: d, isLoading } = useDoctor(did!);
-  const { confirm, pending } = useBook();
   const [slot, setSlot] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
   if (isLoading || !d) return <View style={{ padding: spacing.lg }}><Skeleton height={220} /></View>;
-  const bookNow = async () => {
+  // Booking goes through the (mock) UPI payment screen, which confirms the booking.
+  const bookNow = () => {
     if (!slot) return;
-    setBusy(true);
-    try {
-      const cid = await ensureConsultation(id, d.specialty);
-      const ok = await confirm(cid, d.id, slot);
-      if (ok) router.replace({ pathname: '/(patient)/booked', params: { id: cid, slot, name: d.name } });
-    } finally { setBusy(false); }
+    router.push({ pathname: '/(patient)/pay', params: {
+      amount: String(d.feeInr), doctorId: d.id, slot, specialty: d.specialty, doctorName: d.name,
+      ...(id ? { id } : {}),
+    } });
   };
   return (
     <View style={{ flex: 1, backgroundColor: colors.pageBg }}>
@@ -85,8 +80,8 @@ export default function DoctorDetail() {
       </ScrollView>
 
       <View style={{ padding: spacing.lg, backgroundColor: colors.surface, borderTopWidth: 1, borderColor: colors.border }}>
-        <Button title={slot ? `Book ${slot}` : 'Select a slot'} color={colors.brightGreen}
-          onPress={bookNow} loading={busy || pending} disabled={!slot || busy} />
+        <Button title={slot ? `Book & pay ₹${d.feeInr}` : 'Select a slot'} color={colors.brightGreen}
+          onPress={bookNow} disabled={!slot} />
       </View>
     </View>
   );
