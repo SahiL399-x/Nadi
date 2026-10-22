@@ -27,122 +27,48 @@ from app.models import (
     User,
 )
 
-HEADSHOTS = json.loads((pathlib.Path(__file__).parent / "doctor_headshots.json").read_text())
-_TMPL = HEADSHOTS["url_template"]
-_PHOTOS = [_TMPL.replace("{id}", h["id"]) for h in HEADSHOTS["headshots"]]
+import random as _random
 
-# (name, specialty, qual, exp, fee, rating, reviews, langs, lat, lng)
-DOCTORS = [
-    (
-        "Dr. Anjali Deshmukh",
-        "Cardiology",
-        "MBBS, MD, DM",
-        14,
-        800,
-        4.9,
-        212,
-        ["Hindi", "Marathi", "English"],
-        19.9975,
-        73.7898,
-    ),
-    (
-        "Dr. Rohan Kulkarni",
-        "General Physician",
-        "MBBS",
-        6,
-        300,
-        4.3,
-        88,
-        ["Hindi", "Marathi"],
-        20.0110,
-        73.7900,
-    ),
-    (
-        "Dr. Sneha Patil",
-        "General Medicine",
-        "MBBS, MD",
-        9,
-        450,
-        4.6,
-        134,
-        ["Marathi", "English"],
-        19.9600,
-        73.8300,
-    ),
-    (
-        "Dr. Imran Shaikh",
-        "ENT",
-        "MBBS, MS",
-        11,
-        500,
-        4.5,
-        156,
-        ["Hindi", "English"],
-        20.0300,
-        73.7700,
-    ),
-    (
-        "Dr. Priya Nair",
-        "Dermatology",
-        "MBBS, MD",
-        8,
-        600,
-        4.7,
-        190,
-        ["English", "Hindi"],
-        19.9400,
-        73.7600,
-    ),
-    (
-        "Dr. Vikram Jadhav",
-        "Orthopaedics",
-        "MBBS, MS",
-        16,
-        700,
-        4.8,
-        203,
-        ["Marathi", "Hindi"],
-        20.0500,
-        73.8100,
-    ),
-    (
-        "Dr. Meera Joshi",
-        "Gynaecology",
-        "MBBS, MD",
-        12,
-        650,
-        4.6,
-        171,
-        ["Marathi", "English", "Hindi"],
-        19.9700,
-        73.8000,
-    ),
-    (
-        "Dr. Sameer Pawar",
-        "Paediatrics",
-        "MBBS, MD",
-        7,
-        400,
-        4.4,
-        97,
-        ["Hindi", "Marathi"],
-        20.0200,
-        73.8200,
-    ),
-    ("Dr. Kavita Rao", "General Physician", "MBBS", 5, 250, 4.2, 61, ["Marathi"], 19.9300, 73.7500),
-    (
-        "Dr. Arjun Menon",
-        "Haematology",
-        "MBBS, MD, DM",
-        13,
-        750,
-        4.7,
-        145,
-        ["English", "Hindi"],
-        20.0400,
-        73.7950,
-    ),
+# Searchable specialties — each gets a full roster so any search returns 10+ doctors.
+_SPECIALTIES = [
+    "General Physician", "General Medicine", "Cardiology", "Dermatology",
+    "Paediatrics", "Gynaecology", "Orthopaedics", "ENT", "Haematology",
 ]
+_MALE = ["Rohan", "Arjun", "Vikram", "Sanjay", "Amit", "Rahul", "Nikhil", "Suresh", "Deepak", "Manoj", "Ravi", "Ajay", "Kiran", "Prakash", "Anil"]
+_FEMALE = ["Anjali", "Sneha", "Priya", "Pooja", "Kavita", "Neha", "Divya", "Meera", "Shruti", "Aarti", "Swati", "Nisha", "Sunita", "Deepa", "Rekha"]
+_SURNAMES = ["Deshmukh", "Kulkarni", "Patil", "Joshi", "Nair", "Rao", "Iyer", "Shah", "Mehta", "Gupta", "Reddy", "Verma", "Menon", "Bhat", "Desai"]
+_LANG_SETS = [["Hindi", "Marathi", "English"], ["Hindi", "English"], ["Marathi", "English"], ["Hindi", "Marathi"]]
+_QUALS = ["MBBS", "MBBS, MD", "MBBS, MD, DM", "MBBS, MS", "MBBS, DNB", "MBBS, MD, DNB"]
+
+
+def _portrait(gender: str, n: int) -> str:
+    # randomuser.me portraits: free, gender-labelled, stable per index.
+    folder = "men" if gender == "M" else "women"
+    return f"https://randomuser.me/api/portraits/{folder}/{n % 100}.jpg"
+
+
+def _gen_doctors() -> list[tuple]:
+    r = _random.Random(1234)  # deterministic -> idempotent reseeds
+    out: list[tuple] = []
+    mi = fi = 0
+    for spec in _SPECIALTIES:
+        for k in range(12):
+            gender = "F" if k % 2 == 0 else "M"
+            if gender == "M":
+                first, photo, mi = _MALE[mi % len(_MALE)], _portrait("M", mi), mi + 1
+            else:
+                first, photo, fi = _FEMALE[fi % len(_FEMALE)], _portrait("F", fi), fi + 1
+            out.append((
+                f"Dr. {first} {r.choice(_SURNAMES)}", spec, r.choice(_QUALS), r.randint(5, 28),
+                r.choice([300, 350, 400, 500, 600, 700, 800, 900, 1000, 1200]),
+                round(r.uniform(4.1, 4.9), 1), r.randint(40, 420), r.choice(_LANG_SETS),
+                19.9975 + r.uniform(-0.05, 0.05), 73.7898 + r.uniform(-0.05, 0.05), photo,
+            ))
+    return out
+
+
+# (name, specialty, qual, exp, fee, rating, reviews, langs, lat, lng, photo)
+DOCTORS = _gen_doctors()
 
 PHARMACIES = [
     ("Nashik Medico", "MH-PH-1001", 19.9980, 73.7905, True, True),
@@ -300,9 +226,9 @@ def run(db) -> None:
     if db.scalar(select(User).where(User.phone == "+915000000001")):
         return  # already seeded
 
-    for i, (name, spec, qual, exp, fee, rating, reviews, langs, lat, lng) in enumerate(DOCTORS):
+    for i, (name, spec, qual, exp, fee, rating, reviews, langs, lat, lng, photo) in enumerate(DOCTORS):
         uid = uuid.uuid4()
-        db.add(User(id=uid, phone=f"+9150000100{i:02d}", role=Role.doctor, name=name, lang="mr"))
+        db.add(User(id=uid, phone=f"+9170{i:08d}", role=Role.doctor, name=name, lang="mr"))
         db.flush()
         db.add(
             Doctor(
@@ -317,7 +243,7 @@ def run(db) -> None:
                 rating=rating,
                 review_count=reviews,
                 is_verified=True,
-                photo_url=_PHOTOS[i % len(_PHOTOS)],
+                photo_url=photo,
             )
         )
 
@@ -358,7 +284,7 @@ def run(db) -> None:
             rating=4.5,
             review_count=100,
             is_verified=True,
-            photo_url=_PHOTOS[0],
+            photo_url="https://randomuser.me/api/portraits/men/32.jpg",
             clinic_address="Mital Nagar, Nashik",
             about="General physician, 10 years' experience.",
         )
