@@ -47,6 +47,10 @@
       "expo-image",
       "expo-web-browser",
       "@maplibre/maplibre-react-native",
+      [
+        "expo-location",
+        { "locationWhenInUsePermission": "Nadi uses your location to find doctors and pharmacies near you." }
+      ],
       "@livekit/react-native-expo-plugin",
       [
         "@config-plugins/react-native-webrtc",

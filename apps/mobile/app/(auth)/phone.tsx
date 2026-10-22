@@ -1,16 +1,19 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ImageBackground, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Logo } from '@/components/Logo';
 import { requestOtp } from '@/api/auth';
+import { requestLocation } from '@/lib/location';
 import { colors, spacing, type as t } from '@/theme/tokens';
 
 export default function PhoneScreen() {
   const [phone, setPhone] = useState('+91');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Ask for location up front so the doctor map can centre on the patient.
+  useEffect(() => { void requestLocation(); }, []);
   const submit = async () => {
     setLoading(true); setError(null);
     try { await requestOtp(phone); router.push({ pathname: '/(auth)/otp', params: { phone } }); }

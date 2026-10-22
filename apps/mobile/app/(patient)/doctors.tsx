@@ -9,13 +9,18 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { DoctorsMap } from '@/components/DoctorsMap';
 import { useDoctors } from '@/features/patient/useDoctors';
+import { useLocation } from '@/store/location';
+import { placeNear } from '@/lib/geo';
 import { colors, radii, shadow, spacing, type as t } from '@/theme/tokens';
 
 export default function Doctors() {
   const { id, specialty } = useLocalSearchParams<{ id?: string; specialty: string }>();
   const { data, isLoading, isError, refetch } = useDoctors(specialty || undefined);
+  const { lat, lng } = useLocation();
   const [map, setMap] = useState(false);
-  const doctors = data ?? [];
+  // Show doctors near the patient's current location (demo): distances are derived
+  // from the same placement the map uses, so list and map agree.
+  const doctors = (data ?? []).map((d, i) => ({ ...d, distanceKm: placeNear(lat, lng, i).distanceKm }));
 
   const Seg = ({ active, label, icon, onPress }: { active: boolean; label: string; icon: React.ReactNode; onPress: () => void }) => (
     <Pressable onPress={onPress} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8,
