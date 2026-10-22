@@ -27,7 +27,7 @@ export default function PharmacyInboxScreen() {
             <Pressable onPress={() => { qc.setQueryData(['offer', item.id], item);
               router.push({ pathname: '/(pharmacy)/order/[oid]', params: { oid: item.id } }); }}
               style={{ minHeight: 48, justifyContent: 'center', marginTop: spacing.xs }}>
-              <Text style={{ color: colors.navy, fontSize: t.sm }}>View order →</Text>
+              <Text style={{ color: colors.orange, fontSize: t.sm }}>View order →</Text>
             </Pressable>
           </Card>
         </View>

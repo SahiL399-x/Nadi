@@ -9,8 +9,8 @@ export function OrderRow({ order, onPress }: { order: Order; onPress: () => void
     <Pressable onPress={onPress} style={{ marginBottom: spacing.sm }}>
       <Card>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <Text style={{ fontSize: t.body, fontWeight: '800', color: colors.navy }}>{order.orderNo}</Text>
-          <Text style={{ fontSize: t.xs, color: colors.navy, fontWeight: '700' }}>
+          <Text style={{ fontSize: t.body, fontWeight: '800', color: colors.orange }}>{order.orderNo}</Text>
+          <Text style={{ fontSize: t.xs, color: colors.orange, fontWeight: '700' }}>
             {STATUS_LABEL[order.status] ?? order.status}
           </Text>
         </View>

@@ -28,12 +28,12 @@ export default function OrderDetail() {
   };
   return (
     <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
-      <Text style={{ fontSize: t.h2, fontWeight: '800', color: colors.navy }}>{cached.orderNo}</Text>
+      <Text style={{ fontSize: t.h2, fontWeight: '800', color: colors.orange }}>{cached.orderNo}</Text>
       <Card>
         <Text style={{ fontSize: t.body, fontWeight: '700', color: colors.text }}>{cached.patientName}</Text>
         <Text style={{ fontSize: t.sm, color: colors.textMuted }}>{cached.phone}</Text>
         <Text style={{ fontSize: t.sm, color: colors.text }}>{cached.itemsCount} item(s) · ₹{cached.totalInr}</Text>
-        <Text style={{ fontSize: t.sm, color: colors.navy, fontWeight: '700', marginTop: spacing.xs }}>
+        <Text style={{ fontSize: t.sm, color: colors.orange, fontWeight: '700', marginTop: spacing.xs }}>
           Status: {STATUS_LABEL[status] ?? status}
         </Text>
       </Card>
@@ -46,7 +46,7 @@ export default function OrderDetail() {
             key={next}
             title={`Mark ${STATUS_LABEL[next] ?? next}`}
             loading={pending}
-            color={next === 'CANCELLED' ? colors.emergency : colors.navy}
+            color={next === 'CANCELLED' ? colors.emergency : colors.orange}
             variant={next === 'CANCELLED' ? 'ghost' : 'primary'}
             onPress={() => go(next)}
           />

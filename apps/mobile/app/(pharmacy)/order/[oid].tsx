@@ -21,7 +21,7 @@ export default function Order() {
   if (!offer) return <View style={{ padding: spacing.lg }}><Text style={{ color: colors.textMuted }}>Order not found.</Text></View>;
   if (result) return (
     <View style={{ flex: 1, justifyContent: 'center', padding: spacing.xl }}>
-      <Text style={{ fontSize: t.h2, color: colors.navy, fontWeight: '700' }}>
+      <Text style={{ fontSize: t.h2, color: colors.orange, fontWeight: '700' }}>
         {result === 'accepted' ? 'Order accepted' : result === 'forwarded' ? 'Declined — forwarded to the next pharmacy' : 'Order declined'}
       </Text>
     </View>
@@ -32,7 +32,7 @@ export default function Order() {
       <Card>{offer.lines.map((l, i) => (
         <Text key={i} style={{ color: colors.text, fontSize: t.sm }}>{l.drug} {l.strength} — {l.frequency}, {l.durationDays}d</Text>
       ))}</Card>
-      <Button title="Accept order" color={colors.navy} loading={pending} onPress={() => accept(oid!)} />
+      <Button title="Accept order" color={colors.orange} loading={pending} onPress={() => accept(oid!)} />
       <Button title="Decline" variant="ghost" color={colors.emergency} disabled={pending} onPress={() => decline(oid!)} />
     </ScrollView>
   );

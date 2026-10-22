@@ -10,7 +10,7 @@ import { FilterChips } from '@/components/FilterChips';
 import { OrderRow } from '@/components/OrderRow';
 import { useOrders } from '@/features/pharmacy/useOrders';
 import type { OrderStatusFilter } from '@/api/pharmacyPortal';
-import { spacing } from '@/theme/tokens';
+import { colors, spacing } from '@/theme/tokens';
 
 const OPTS = [
   { label: 'All', value: 'all' }, { label: 'New', value: 'pending' },
@@ -24,7 +24,7 @@ export default function Orders() {
   const qc = useQueryClient();
   return (
     <View style={{ flex: 1, paddingTop: spacing.lg, gap: spacing.sm }}>
-      <FilterChips options={OPTS} value={status} onChange={(v) => setStatus(v as OrderStatusFilter)} />
+      <FilterChips options={OPTS} value={status} onChange={(v) => setStatus(v as OrderStatusFilter)} color={colors.orange} />
       {isLoading ? (
         <View style={{ padding: spacing.lg, gap: spacing.sm }}>{[0, 1, 2].map((i) => <Skeleton key={i} height={84} />)}</View>
       ) : isError ? <ErrorState message="Could not load orders." onRetry={refetch} /> : (
