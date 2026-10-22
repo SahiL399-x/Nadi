@@ -8,6 +8,18 @@ def test_chest_breath_is_emergency_with_redflag():
     assert r["modelVersion"] == "stub-keyword-v0"
 
 
+def test_chest_pain_alone_routes_urgent_to_cardiology():
+    r = run("chest pain since morning", [], 45, "M")
+    assert r["acuity"] == "URGENT"
+    assert r["specialties"][0]["name"] == "Cardiology"
+    assert not r["redFlags"]
+
+
+def test_skin_routes_to_dermatology():
+    r = run("itchy rash on my arm", [], 28, "F")
+    assert r["specialties"][0]["name"] == "Dermatology"
+
+
 def test_chakkar_is_priority_general_medicine():
     r = run("mujhe chakkar aa raha hai", [], 30, "F")
     assert r["acuity"] == "PRIORITY"
