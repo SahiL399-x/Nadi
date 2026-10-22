@@ -4,11 +4,14 @@ import { ListChecks, CalendarDays, FileText, FlaskConical, Clock, UserCog } from
 import { StatTile } from '@/components/StatTile';
 import { NavCard } from '@/components/NavCard';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Button } from '@/components/ui/Button';
 import { useDoctorStats } from '@/features/doctor/useDoctorStats';
+import { useSession } from '@/store/session';
 import { colors, spacing, type as t } from '@/theme/tokens';
 
 export default function DoctorDashboard() {
   const { data, isLoading } = useDoctorStats();
+  const signOut = useSession((s) => s.signOut);
   return (
     <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
       <Text style={{ fontSize: t.h2, fontWeight: '800', color: colors.navy }}>Dashboard</Text>
@@ -34,6 +37,7 @@ export default function DoctorDashboard() {
         <NavCard label="Availability" Icon={Clock} onPress={() => router.push('/(doctor)/availability')} />
         <NavCard label="Profile" Icon={UserCog} onPress={() => router.push('/(doctor)/profile')} />
       </View>
+      <Button title="Sign out" variant="ghost" onPress={async () => { await signOut(); router.replace('/(auth)/phone'); }} />
     </ScrollView>
   );
 }

@@ -4,11 +4,14 @@ import { Inbox, ClipboardList } from 'lucide-react-native';
 import { StatTile } from '@/components/StatTile';
 import { NavCard } from '@/components/NavCard';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Button } from '@/components/ui/Button';
 import { usePharmacyStats } from '@/features/pharmacy/usePharmacyStats';
+import { useSession } from '@/store/session';
 import { colors, spacing, type as t } from '@/theme/tokens';
 
 export default function PharmacyDashboard() {
   const { data, isLoading } = usePharmacyStats();
+  const signOut = useSession((s) => s.signOut);
   return (
     <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}>
       <Text style={{ fontSize: t.h2, fontWeight: '800', color: colors.navy }}>Pharmacy</Text>
@@ -29,6 +32,7 @@ export default function PharmacyDashboard() {
         <NavCard label="Orders Board" Icon={ClipboardList} onPress={() => router.push('/(pharmacy)/orders')} />
         <NavCard label="New Requests" Icon={Inbox} onPress={() => router.push('/(pharmacy)/inbox')} />
       </View>
+      <Button title="Sign out" variant="ghost" onPress={async () => { await signOut(); router.replace('/(auth)/phone'); }} />
     </ScrollView>
   );
 }
