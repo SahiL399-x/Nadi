@@ -4,12 +4,15 @@ import { router } from 'expo-router';
 import { QueueRow } from '@/components/QueueRow';
 import { EmptyState, ErrorState, Skeleton } from '@/components/ui';
 import { useQueue } from '@/features/doctor/useQueue';
+import { useNotifyOnNew } from '@/features/notifications/useNotifyOnNew';
 import { useQueryClient } from '@tanstack/react-query';
 import { spacing } from '@/theme/tokens';
 
 export default function DoctorQueueScreen() {
   const { data, isLoading, isError, refetch } = useQueue();
   const qc = useQueryClient();
+  useNotifyOnNew(data, (i) => i.id, 'doctor',
+    (i) => ({ title: 'New patient waiting', body: `${i.patientName} — ${i.complaint}` }));
   if (isLoading) return <View style={{ padding: spacing.lg, gap: spacing.sm }}>{[0, 1, 2].map((i) => <Skeleton key={i} height={88} />)}</View>;
   if (isError) return <ErrorState message="Could not load the queue." onRetry={refetch} />;
   return (

@@ -7,6 +7,7 @@ import { TrendChart, BarChart, weeklyTrend } from '@/components/charts';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
 import { Logo } from '@/components/Logo';
+import { Bell } from '@/components/Bell';
 import { usePharmacyStats } from '@/features/pharmacy/usePharmacyStats';
 import { useSession } from '@/store/session';
 import { colors, radii, shadow, spacing, type as t } from '@/theme/tokens';
@@ -21,7 +22,10 @@ export default function PharmacyDashboard() {
           <Text style={{ fontSize: t.sm, color: colors.textMuted }}>Pharmacy portal</Text>
           <Text style={{ fontSize: t.h2, fontWeight: '800', color: colors.orange }}>Dashboard</Text>
         </View>
-        <Logo width={92} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+          <Bell color={colors.orange} />
+          <Logo width={92} />
+        </View>
       </View>
 
       {isLoading || !data ? (

@@ -7,12 +7,15 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useInbox } from '@/features/pharmacy/useInbox';
+import { useNotifyOnNew } from '@/features/notifications/useNotifyOnNew';
 import type { Offer } from '@/api/schemas';
 import { colors, spacing, type as t } from '@/theme/tokens';
 
 export default function PharmacyInboxScreen() {
   const { data, isLoading, isError, refetch } = useInbox();
   const qc = useQueryClient();
+  useNotifyOnNew(data, (o) => o.id, 'pharmacy',
+    (o) => ({ title: 'New order request', body: `${o.patientName} sent a prescription.` }));
   if (isLoading) return <View style={{ padding: spacing.lg, gap: spacing.sm }}>{[0, 1].map((i) => <Skeleton key={i} height={88} />)}</View>;
   if (isError) return <ErrorState message="Could not load the inbox." onRetry={refetch} />;
   return (

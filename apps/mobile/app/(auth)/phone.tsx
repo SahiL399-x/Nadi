@@ -6,14 +6,15 @@ import { Input } from '@/components/ui/Input';
 import { Logo } from '@/components/Logo';
 import { requestOtp } from '@/api/auth';
 import { requestLocation } from '@/lib/location';
+import { requestNotifications } from '@/lib/notify';
 import { colors, spacing, type as t } from '@/theme/tokens';
 
 export default function PhoneScreen() {
   const [phone, setPhone] = useState('+91');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Ask for location up front so the doctor map can centre on the patient.
-  useEffect(() => { void requestLocation(); }, []);
+  // Ask for location + notification permission up front.
+  useEffect(() => { void requestLocation(); void requestNotifications(); }, []);
   const submit = async () => {
     setLoading(true); setError(null);
     try { await requestOtp(phone); router.push({ pathname: '/(auth)/otp', params: { phone } }); }

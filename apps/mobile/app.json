@@ -51,6 +51,7 @@
         "expo-location",
         { "locationWhenInUsePermission": "Nadi uses your location to find doctors and pharmacies near you." }
       ],
+      "expo-notifications",
       "@livekit/react-native-expo-plugin",
       [
         "@config-plugins/react-native-webrtc",

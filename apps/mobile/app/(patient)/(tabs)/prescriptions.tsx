@@ -5,12 +5,15 @@ import { FileText } from 'lucide-react-native';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { getMyPrescriptions } from '@/api/me';
+import { useNotifyOnNew } from '@/features/notifications/useNotifyOnNew';
 import { colors, radii, shadow, spacing, type as t } from '@/theme/tokens';
 
 export default function Prescriptions() {
   const { data, isLoading } = useQuery({
     queryKey: ['myPrescriptions'], queryFn: getMyPrescriptions, refetchInterval: 5000,
   });
+  useNotifyOnNew(data, (p) => p.id, 'patient',
+    (p) => ({ title: 'Prescription ready', body: `${p.doctorName} prescribed ${p.items} medicine(s).` }));
   const items = data ?? [];
   return (
     <ScrollView style={{ backgroundColor: colors.pageBg }} contentContainerStyle={{ padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl }}>

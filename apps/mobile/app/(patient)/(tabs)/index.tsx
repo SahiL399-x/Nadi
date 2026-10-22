@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { SpecialtyGrid } from '@/components/SpecialtyGrid';
 import { Logo } from '@/components/Logo';
+import { Bell } from '@/components/Bell';
 import { colors, radii, shadow, spacing, type as t } from '@/theme/tokens';
 
 type Lang = 'en' | 'hi' | 'mr';
@@ -24,9 +25,12 @@ export default function PatientHome() {
       style={{ backgroundColor: colors.pageBg }}
       contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl }}
     >
-      <View style={{ gap: 2 }}>
-        <Text style={{ fontSize: t.sm, color: colors.textMuted }}>Welcome to</Text>
-        <Logo width={120} />
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <View style={{ gap: 2 }}>
+          <Text style={{ fontSize: t.sm, color: colors.textMuted }}>Welcome to</Text>
+          <Logo width={120} />
+        </View>
+        <Bell color={colors.brightGreen} />
       </View>
 
       {/* Search entry into the full doctor directory */}
