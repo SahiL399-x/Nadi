@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { Input } from '@/components/ui/Input';
 import { useMedicineSearch } from '@/features/doctor/useMedicineSearch';
+import { medicineImage } from '@/lib/medicineImage';
 import { colors, radii, spacing, type as t } from '@/theme/tokens';
 
 type Props = {
@@ -21,8 +23,10 @@ export function MedicineAutocomplete({ value, onChangeText, onPick }: Props) {
         <View style={{ borderWidth: 1, borderColor: colors.border, borderRadius: radii.sm, marginTop: 4 }}>
           {(data ?? []).slice(0, 6).map((m) => (
             <Pressable key={m.id} onPress={() => { onPick({ name: m.name, strength: m.strength }); setFocused(false); }}
-              style={{ padding: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-              <Text style={{ fontSize: t.sm, color: colors.text }}>{m.name} {m.strength} · {m.form}</Text>
+              style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm,
+                borderBottomWidth: 1, borderBottomColor: colors.border }}>
+              <Image source={{ uri: medicineImage(m.name) }} style={{ width: 34, height: 34, borderRadius: radii.sm, backgroundColor: colors.lightGrey }} contentFit="cover" />
+              <Text style={{ fontSize: t.sm, color: colors.text, flex: 1 }}>{m.name} {m.strength} · {m.form}</Text>
             </Pressable>
           ))}
         </View>
