@@ -17,7 +17,8 @@ def verify_otp(db: Session, phone: str, code: str, role: str, name: str) -> Toke
         # New self-service signups are always patients. The caller-supplied `role`
         # is NOT trusted for privilege: doctor/pharmacy accounts are provisioned
         # server-side (seed / admin) and an existing user keeps its stored role.
-        user = User(id=uuid.uuid4(), phone=phone, role=Role.patient, name=name or "User")
+        default_name = f"Patient {phone[-4:]}" if phone else "Patient"
+        user = User(id=uuid.uuid4(), phone=phone, role=Role.patient, name=name or default_name)
         db.add(user)
         db.flush()
         # Every patient gets a profile row so the doctor-queue join resolves
