@@ -1,3 +1,4 @@
+import logging
 import time
 
 from app.ocr import storage
@@ -5,6 +6,8 @@ from app.ocr.engine import MODEL_VERSION, run_ocr
 from app.ocr.normalize import normalize_fields
 from app.ocr.parse import parse_fields
 from app.ocr.preprocess import load_and_validate
+
+logger = logging.getLogger(__name__)
 
 
 def to_labs(fields: list[dict]) -> list[dict]:
@@ -44,5 +47,9 @@ def extract_report(object_key: str, *, ocr_fn=None) -> dict:
             "warnings": norm["warnings"], "modelVersion": MODEL_VERSION,
             "latencyMs": int((time.monotonic() - start) * 1000),
         }
-    except Exception:  # noqa: BLE001 — never crash the consultation flow
-        return _safe_result(int((time.monotonic() - start) * 1000))
+    except Exception as exc:  # noqa: BLE001 — never crash the consultation flow
+        latency_ms = int((time.monotonic() - start) * 1000)
+        # Metadata only: exception type + latency. Never log the object key,
+        # image bytes, or any extracted report content.
+        logger.warning("ocr_extraction_failed exc_type=%s latency_ms=%d", type(exc).__name__, latency_ms)
+        return _safe_result(latency_ms)
