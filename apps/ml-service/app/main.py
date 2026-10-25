@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 
+from app.config import settings
 from app.document_stub import extract
+from app.ocr.pipeline import extract_report
 from app.schemas import DocumentRequest, SymptomRequest, TriageRequest
 from app.symptom_stub import normalise
 from app.triage_stub import MODEL_VERSION, run
@@ -20,6 +22,9 @@ def symptom(req: SymptomRequest) -> dict:
 
 @app.post("/ml/v1/document")
 def document(req: DocumentRequest) -> dict:
+    if settings.ml_ocr_enabled:
+        return extract_report(req.objectKey)
+    # Flag off: unchanged stub behavior (keeps the running app on the known path).
     return {"labs": extract(req.objectKey)}
 
 
