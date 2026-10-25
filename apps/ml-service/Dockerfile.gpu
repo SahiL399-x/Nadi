@@ -1,0 +1,13 @@
+# GPU image for OCR benchmarking ONLY (not the deployed service — that stays CPU,
+# see Dockerfile). Runs with `docker run --gpus all`. PaddlePaddle GPU wheel for
+# CUDA 12.6 (RTX 3050, 4GB — PP-OCRv5 mobile models fit).
+FROM python:3.11-slim
+WORKDIR /srv
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      libgl1 libglib2.0-0 libgomp1 && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir \
+      paddlepaddle-gpu==3.2.0 -i https://www.paddlepaddle.org.cn/packages/stable/cu126/ \
+ && pip install --no-cache-dir \
+      paddleocr==3.7.0 pillow numpy opencv-python-headless
+COPY app ./app
+CMD ["python", "-c", "import paddle; print('paddle gpu build ok', paddle.is_compiled_with_cuda())"]
