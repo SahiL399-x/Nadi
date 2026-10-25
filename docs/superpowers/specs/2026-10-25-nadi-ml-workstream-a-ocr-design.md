@@ -29,6 +29,14 @@ executed in sequence so no single spec tries to hold all of them:
 - **Non-negotiables carried from the blueprint:** reuse existing architecture; additive /
   feature-flagged contract changes only; no fabricated results; synthetic/de-identified data only;
   keep the deterministic red-flag safety layer; never log raw report content.
+- **Compute/training policy (operator preference):** use the GPU fully — OCR runs in **GPU
+  inference** mode on the 3050 for the service + benchmark (not CPU). Where training/fine-tuning
+  actually occurs (conditionally here, and in Workstream B), **train to convergence — no artificial
+  under-training**: full epochs with proper early-stopping, model sized to the task. The binding
+  limit is **VRAM (~4 GB)** and available labelled data, not compute willingness; if a model needs
+  more than 4 GB, flag it for the stronger-GPU/cloud option rather than silently under-training.
+  Note: Workstream A (OCR) is pretrained-inference + benchmark — there is nothing to train unless the
+  benchmark justifies a fine-tune on a legally-usable labelled image set.
 
 ### Baseline verified in code (Phase 0 audit, 2026-10-25)
 
@@ -69,8 +77,9 @@ round-trip through the API.
 
 ### Model choice
 
-- **PaddleOCR 3.x, PP-OCRv5 lightweight (mobile) detection + recognition, CPU-first** (optionally GPU
-  on the 3050). **Not** PaddleOCR-VL (does not fit 4 GB VRAM comfortably; overkill for a first baseline).
+- **PaddleOCR 3.x, PP-OCRv5 lightweight (mobile) detection + recognition.** Runs in **GPU mode on the
+  3050** for dev + benchmark, but kept **CPU-runnable** so the deferred production-host choice stays
+  open. **Not** PaddleOCR-VL (does not fit 4 GB VRAM comfortably; overkill for a first baseline).
 - **PP-StructureV3 table parser is conditional** — added only if plain OCR + geometric row-grouping
   underperforms on the benchmark (measure before adding the dependency).
 - Exact model variant + pinned version decided **after** verifying the current official PaddleOCR
