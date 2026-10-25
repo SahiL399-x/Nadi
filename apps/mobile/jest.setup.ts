@@ -11,3 +11,12 @@ jest.mock('expo-secure-store', () => {
     deleteItemAsync: jest.fn(async (k: string) => { delete store[k]; }),
   };
 }, { virtual: true });
+
+// Under jest-expo the native notification scheduler never settles, so the
+// fire-and-forget `notify()` call (now wired into hooks across all three
+// portals) leaves `act()` hanging. Stub the OS calls so they resolve
+// immediately; `notify()`'s in-app feed logic still runs for real.
+jest.mock('expo-notifications', () => ({
+  scheduleNotificationAsync: jest.fn(async () => 'stub-id'),
+  requestPermissionsAsync: jest.fn(async () => ({ status: 'granted', granted: true })),
+}), { virtual: true });
