@@ -1,0 +1,11 @@
+[
+  {
+    "lines": [
+      {"text": "Haemoglobin", "box": [10, 100, 80, 12], "conf": 0.98},
+      {"text": "9.1", "box": [200, 100, 30, 12], "conf": 0.98},
+      {"text": "g/dL", "box": [260, 100, 40, 12], "conf": 0.98},
+      {"text": "12.0 - 15.5", "box": [340, 100, 80, 12], "conf": 0.98}
+    ],
+    "truth": [{"analyte": "Haemoglobin", "value": 9.1, "unit": "g/dL", "flag": "L"}]
+  }
+]
