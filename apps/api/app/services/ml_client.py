@@ -16,5 +16,5 @@ def triage(payload: dict) -> dict:
     return _post("/ml/v1/triage", payload)
 
 
-def document(object_key: str) -> list[dict]:
-    return _post("/ml/v1/document", {"objectKey": object_key})["labs"]
+def document(object_key: str) -> dict:
+    return _post("/ml/v1/document", {"objectKey": object_key})
