@@ -45,6 +45,7 @@ class Report(Base):
     consultation_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("consultations.id"))
     object_key: Mapped[str] = mapped_column(String)
     ocr_status: Mapped[str] = mapped_column(String, default="pending")
+    extraction_json: Mapped[str | None] = mapped_column(String, nullable=True)
 
 
 class LabValue(Base):
