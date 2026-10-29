@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/Card';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { usePatient } from '@/features/doctor/usePatient';
+import { ReportsSection } from '@/components/doctor/ReportsSection';
 import { colors, spacing, type as t } from '@/theme/tokens';
 
 function Section({ title, items, empty }: { title: string; items: string[]; empty: string }) {
@@ -36,6 +37,7 @@ export default function PatientFile() {
         ) : <Text style={{ fontSize: t.sm, color: colors.text }}>No visits yet</Text>}
       </Card>
       <Section title="Past prescriptions" items={data.prescriptions} empty="None issued" />
+      <ReportsSection patientId={pid!} />
     </ScrollView>
   );
 }
