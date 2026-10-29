@@ -3,7 +3,7 @@ import io
 import pytest
 from PIL import Image
 
-from app.ocr.preprocess import InvalidImageError, load_and_validate, load_document
+from app.ocr.preprocess import InvalidImageError, enhance, load_and_validate, load_document
 
 
 def _png_bytes(size=(40, 20)) -> bytes:
@@ -53,3 +53,9 @@ def test_load_document_pdf_rasterizes_each_page():
 def test_load_document_pdf_page_cap():
     out = load_document(_pdf_bytes(pages=15), max_pages=10)
     assert len(out) == 10
+
+
+def test_enhance_returns_same_size_rgb():
+    out = enhance(Image.new("RGB", (120, 90), "gray"))
+    assert out.mode == "RGB"
+    assert out.size == (120, 90)

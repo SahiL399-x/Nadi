@@ -1,4 +1,5 @@
 import io
+from unittest.mock import patch
 
 import pytest
 from PIL import Image
@@ -81,3 +82,24 @@ def test_unknown_or_unparseable_sets_needs_review(monkeypatch):
     res = pipeline.extract_report("x.webp", ocr_fn=_ocr)
     assert res["needsReview"] is True  # unknown_analyte triggers review
     assert res["labs"] == []           # unknown analytes excluded from back-compat labs
+
+
+def _png_bytes() -> bytes:
+    buf = io.BytesIO()
+    Image.new("RGB", (80, 80), "white").save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def test_extract_report_enhances_only_upload_keys(monkeypatch):
+    monkeypatch.setattr(storage, "fetch_object", lambda key: _png_bytes())
+    calls = {"n": 0}
+
+    def spy_enhance(img):
+        calls["n"] += 1
+        return img
+
+    with patch.object(pipeline, "enhance", spy_enhance):
+        pipeline.extract_report("reports/scan/u/a.webp", ocr_fn=lambda im: [])
+        assert calls["n"] == 0  # scan source: no enhancement
+        pipeline.extract_report("reports/upload/u/a.webp", ocr_fn=lambda im: [])
+        assert calls["n"] == 1  # upload source: enhanced

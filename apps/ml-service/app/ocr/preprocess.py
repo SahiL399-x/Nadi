@@ -1,5 +1,7 @@
 import io
 
+import cv2
+import numpy as np
 import pypdfium2 as pdfium
 from PIL import Image, ImageOps, UnidentifiedImageError
 
@@ -41,3 +43,12 @@ def load_document(data: bytes, *, max_pages: int = 10, dpi: int = 200) -> list[I
         bitmap = pdf[i].render(scale=scale)
         images.append(bitmap.to_pil().convert("RGB"))
     return images
+
+
+def enhance(img: Image.Image) -> Image.Image:
+    """Grayscale + CLAHE contrast for noisy uploaded photos. Returns RGB, same size."""
+    arr = cv2.cvtColor(np.asarray(img.convert("RGB")), cv2.COLOR_RGB2GRAY)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    eq = clahe.apply(arr)
+    rgb = cv2.cvtColor(eq, cv2.COLOR_GRAY2RGB)
+    return Image.fromarray(rgb)

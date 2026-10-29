@@ -5,7 +5,7 @@ from app.ocr import storage
 from app.ocr.engine import MODEL_VERSION, run_ocr
 from app.ocr.normalize import normalize_fields
 from app.ocr.parse import parse_fields
-from app.ocr.preprocess import load_document
+from app.ocr.preprocess import enhance, load_document
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +33,8 @@ def extract_report(object_key: str, *, ocr_fn=None) -> dict:
     start = time.monotonic()
     try:
         images = load_document(storage.fetch_object(object_key))
+        if "/upload/" in object_key:
+            images = [enhance(im) for im in images]
         fields: list[dict] = []
         warnings: list[str] = []
         for image in images:
