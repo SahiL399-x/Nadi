@@ -16,6 +16,8 @@ def _parse(extraction_json: str | None) -> tuple[bool, list[dict], bool]:
         data = json.loads(extraction_json)
     except (ValueError, TypeError):
         return False, [], False
+    if not isinstance(data, dict):
+        return False, [], False
     return True, list(data.get("fields", [])), bool(data.get("needsReview", False))
 
 

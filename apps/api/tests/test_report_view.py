@@ -66,3 +66,14 @@ def test_reports_pdf_kind_and_null_extraction(client, db, monkeypatch):
     assert body[0]["kind"] == "pdf"
     assert body[0]["extracted"] is False
     assert body[0]["fields"] == []
+
+
+def test_reports_non_dict_json_extraction(client, db, monkeypatch):
+    monkeypatch.setattr(storage_service, "presign_get", lambda key: f"http://minio/{key}")
+    token, doctor_id = _doctor_token(client, db)
+    pid = _patient_with_report(db, doctor_id, "reports/upload/u/d.webp", "[]")
+    r = client.get(f"/v1/doctor/patients/{pid}/reports", headers={"Authorization": f"Bearer {token}"})
+    assert r.status_code == 200
+    body = r.json()
+    assert body[0]["extracted"] is False
+    assert body[0]["fields"] == []
