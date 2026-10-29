@@ -26,6 +26,14 @@ def presign_put(object_key: str) -> str:
     )
 
 
+def presign_get(object_key: str) -> str:
+    return _client().generate_presigned_url(
+        "get_object",
+        Params={"Bucket": settings.s3_bucket, "Key": object_key},
+        ExpiresIn=300,
+    )
+
+
 def ensure_bucket() -> None:
     """Create the reports bucket if it does not exist, so a fresh stack accepts
     report uploads with no manual MinIO setup. Idempotent; called on API startup."""

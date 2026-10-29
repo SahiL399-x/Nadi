@@ -13,6 +13,7 @@ from app.schemas.doctor_lists import DoctorPrescriptionOut, LabReportOut
 from app.schemas.doctor_profile import DoctorProfileIn, DoctorProfileOut
 from app.schemas.patient_profile import PatientProfileOut
 from app.schemas.prescription import PrescribeIn, ReferIn
+from app.schemas.report_view import ReportViewOut
 from app.schemas.stats import DoctorStatsOut
 from app.services import (
     audit_service,
@@ -22,6 +23,7 @@ from app.services import (
     lab_report_service,
     patient_service,
     prescription_service,
+    report_view_service,
     stats_service,
 )
 
@@ -61,6 +63,17 @@ def patient_profile(
     if out is None:
         raise HTTPException(status_code=404, detail="not found")
     return out
+
+
+@router.get("/patients/{patient_id}/reports", response_model=list[ReportViewOut])
+def patient_reports(
+    patient_id: str,
+    user: User = Depends(require_role("doctor")),
+    db: Session = Depends(get_db),
+):
+    if not patient_service.owned_by_doctor(db, patient_id, user.id):
+        raise HTTPException(status_code=404, detail="not found")
+    return report_view_service.list_for_patient(db, user.id, patient_id)
 
 
 @router.get("/prescriptions", response_model=list[DoctorPrescriptionOut])
