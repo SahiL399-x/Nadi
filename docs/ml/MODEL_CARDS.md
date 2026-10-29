@@ -37,6 +37,22 @@ _Do not fill in numbers here from memory, estimation, or a partial/manual spot-c
 - **Source JSON**: `apps/ml-service/bench/results/eka_baseline.json`
 - **Date**: 2026-10-29
 
+#### Step-2 Fix #1 — adaptive row grouping (`parse.py`)
+
+- **Change**: replaced the fixed 14px row-grouping bucket with resolution-adaptive clustering (row tolerance scales with the median OCR text height). Pure geometry — **not tuned on the Eka gold** (honors the no-contamination rule). Root cause: on ~4000px scans a logical row's cells sit ~30px apart and the 14px bucket split name from value, so both were dropped (62 images parsed 0 fields despite good OCR). Covered by 2 regression tests in `tests/test_parse.py`; 35/35 ml-service tests green.
+- **Same 218 images / 1906 gold tests, same PP-OCRv6_medium pipeline.** Recognition unchanged (as expected — only parsing changed), so the deltas are cleanly attributable to the fix:
+
+| Metric | baseline micro/macro | fix #1 micro/macro | Δ micro/macro | tests gained |
+|---|---|---|---|---|
+| `ocr_name_in_text`  | 80.2 / 87.1 | 80.2 / 87.1 | — / — | — |
+| `ocr_value_in_text` | 92.5 / 95.6 | 92.5 / 95.6 | — / — | — |
+| `name_recall`       | 38.7 / 47.6 | **45.8 / 57.0** | +7.1 / +9.4 | 737 → 873 (+136) |
+| `value_recall`      | 35.0 / 43.5 | **41.8 / 52.3** | +6.8 / +8.8 | 667 → 797 (+130) |
+
+- **Remaining gap** (recognition ~80% vs extraction ~46%) is now dominated by **non-numeric/qualitative values** (urinalysis `NIL`/`PALE YELLOW`, vision `6/6`), fused value+unit cells, and column-structured layouts — the `_NUM`-only value detector drops these by design (candidate Step-2 Fix #2).
+- **Source JSON**: `apps/ml-service/bench/results/eka_fix1_rowgroup.json`
+- **Date**: 2026-10-29
+
 ### Synthetic fixture — `bench/ocr_eval.py` (CER/pairing harness)
 
 _Separate harness with field-level gold; not yet run on a real dataset._

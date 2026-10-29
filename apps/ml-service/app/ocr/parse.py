@@ -1,12 +1,41 @@
 import re
+from statistics import median
 
 _NUM = re.compile(r"^[<>]?\d+(?:\.\d+)?$")
 _RANGE = re.compile(r"\d+(?:\.\d+)?\s*[-–]\s*\d+(?:\.\d+)?")
 
 
-def _row_key(box: list[int]) -> int:
-    # Group by vertical band: midpoint bucketed to tolerate small y jitter.
-    return (box[1] + box[3] // 2) // 14
+def _ymid(box: list[int]) -> int:
+    return box[1] + box[3] // 2
+
+
+def _group_rows(lines: list[dict]) -> list[list[dict]]:
+    """Cluster OCR lines into visual rows by vertical position.
+
+    Resolution-adaptive: the row tolerance scales with the median text height,
+    so a single logical row's cells stay together whether the scan is 300px or
+    4000px tall. A previous fixed 14px bucket shattered rows on high-resolution
+    scans — a row's name and value land ~30px apart and fell into different
+    buckets, so both were dropped (62/218 real lab images parsed zero fields
+    despite good OCR). Grouping by the first (topmost) line's midpoint as the
+    row anchor avoids chaining-drift that would over-merge adjacent rows.
+    """
+    if not lines:
+        return []
+    tol = max(median(ln["box"][3] for ln in lines) * 0.7, 10.0)
+    ordered = sorted(lines, key=lambda ln: _ymid(ln["box"]))
+    rows: list[list[dict]] = []
+    current = [ordered[0]]
+    anchor = _ymid(ordered[0]["box"])
+    for ln in ordered[1:]:
+        if _ymid(ln["box"]) - anchor <= tol:
+            current.append(ln)
+        else:
+            rows.append(current)
+            current = [ln]
+            anchor = _ymid(ln["box"])
+    rows.append(current)
+    return rows
 
 
 def _bbox(boxes: list[list[int]]) -> list[int]:
@@ -18,13 +47,9 @@ def _bbox(boxes: list[list[int]]) -> list[int]:
 
 
 def parse_fields(lines: list[dict]) -> list[dict]:
-    rows: dict[int, list[dict]] = {}
-    for ln in lines:
-        rows.setdefault(_row_key(ln["box"]), []).append(ln)
-
     out: list[dict] = []
-    for key in sorted(rows):
-        cells = sorted(rows[key], key=lambda c: c["box"][0])
+    for row in _group_rows(lines):
+        cells = sorted(row, key=lambda c: c["box"][0])
         texts = [c["text"].strip() for c in cells]
 
         value_idx = next((i for i, t in enumerate(texts) if _NUM.match(t)), None)
