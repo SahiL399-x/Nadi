@@ -18,7 +18,9 @@ def _parse(extraction_json: str | None) -> tuple[bool, list[dict], bool]:
         return False, [], False
     if not isinstance(data, dict):
         return False, [], False
-    return True, list(data.get("fields", [])), bool(data.get("needsReview", False))
+    raw_fields = data.get("fields", [])
+    fields = [f for f in raw_fields if isinstance(f, dict)] if isinstance(raw_fields, list) else []
+    return True, fields, bool(data.get("needsReview", False))
 
 
 def list_for_patient(db: Session, doctor_id, patient_id) -> list[ReportViewOut]:

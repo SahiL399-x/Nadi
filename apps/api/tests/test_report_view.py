@@ -77,3 +77,15 @@ def test_reports_non_dict_json_extraction(client, db, monkeypatch):
     body = r.json()
     assert body[0]["extracted"] is False
     assert body[0]["fields"] == []
+
+
+def test_reports_non_list_fields_extraction(client, db, monkeypatch):
+    monkeypatch.setattr(storage_service, "presign_get", lambda key: f"http://minio/{key}")
+    token, doctor_id = _doctor_token(client, db)
+    pid = _patient_with_report(db, doctor_id, "reports/upload/u/e.webp",
+                               '{"fields": "oops", "needsReview": false}')
+    r = client.get(f"/v1/doctor/patients/{pid}/reports", headers={"Authorization": f"Bearer {token}"})
+    assert r.status_code == 200
+    body = r.json()
+    assert body[0]["extracted"] is True
+    assert body[0]["fields"] == []
