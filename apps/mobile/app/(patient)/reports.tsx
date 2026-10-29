@@ -12,7 +12,7 @@ export default function Reports() {
   const { items, add, remove, retry, allSettled, objectKeys } = useReportUploads();
   const pick = async () => {
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 1 });
-    if (!res.canceled && res.assets[0]) add(res.assets[0].uri);
+    if (!res.canceled && res.assets[0]) add(res.assets[0].uri, 'image', 'upload');
   };
   const go = () => router.push({ pathname: '/(patient)/analyzing',
     params: { symptomText, lang, keys: JSON.stringify(objectKeys) } });
