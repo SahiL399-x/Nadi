@@ -59,6 +59,10 @@
           "cameraPermission": "NADI needs the camera for your video consultation.",
           "microphonePermission": "NADI needs the microphone for your video consultation."
         }
+      ],
+      [
+        "react-native-document-scanner-plugin",
+        { "cameraPermission": "NADI needs the camera to scan your lab reports." }
       ]
     ],
     "extra": {
