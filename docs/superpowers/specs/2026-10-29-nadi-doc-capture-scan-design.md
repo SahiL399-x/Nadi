@@ -31,6 +31,9 @@ improvements (recognition is already ~80–95%; cleaner input lifts it further).
 - No OCR of the PDF text layer — PDFs are rasterized and OCR'd as images
   (lab-report PDFs are usually scans without a reliable text layer, and this
   keeps one code path).
+- **The doctor-facing report viewer UI is a separate, sequenced spec** (see §10).
+  This spec's only obligation to it is to **persist the full extraction** (§5.4)
+  and ensure a scan can be fetched for viewing.
 
 ## 3. Key decisions (from brainstorm)
 
@@ -112,6 +115,16 @@ bucket+key), so PDF upload needs no API change.
 - **Deps:** add `pypdfium2` (permissive) to `pyproject.toml` + container. OpenCV
   already present via PaddleOCR.
 
+### 5.4 Persist the full extraction (feeds the downstream doctor viewer)
+- Today only the numeric "known analyte" subset is stored (`LabValue` per
+  report); the richer Step-2 output (qualitative results, LOINC, canonical/raw
+  names, `needsReview`, per-field `qualityFlags`) is discarded after triage.
+- **Add an `extraction_json` (JSON/text) column to `Report`** and persist the
+  full `fields` + `needsReview` + `modelVersion` there at intake. `LabValue`
+  rows stay (back-compat). `ml_client.document()` must return the full result
+  (currently returns only `["labs"]`). Migration is additive.
+- This makes the doctor viewer a pure read+UI feature with no extraction rework.
+
 ## 6. Phased build order (single spec, incremental delivery)
 
 1. **Phase 1 — Scanner + gallery, multi-page images.** Mobile only; reuses the
@@ -145,3 +158,26 @@ bucket+key), so PDF upload needs no API change.
 
 None blocking. Revisit page cap (default 10) and enhancement aggressiveness
 after first real-device testing.
+
+## 10. Downstream: Doctor report viewer (separate spec, sequenced next)
+
+Not built here — recorded so the pipeline above feeds it correctly. To be its
+own `*-doctor-report-viewer-design.md` spec after this workstream.
+
+- **Goal:** in the doctor's patient-reports section, show each report the patient
+  uploaded as a **scanned preview**, with the field extraction laid out cleanly
+  beneath, "sleek modern."
+- **UI pattern (user-specified, ref: Google Classroom attachment card):**
+  - Each report = a **rectangular preview card** — label/filename on the left, a
+    **scan thumbnail on the right**; tap → full-screen scan view.
+  - Extracted fields rendered **compactly, one per line**, with a **dropdown /
+    expand arrow** to reveal the *full* extraction aggregated across all of the
+    patient's uploaded reports.
+  - Report preview cards listed below the extraction summary.
+- **Backend prerequisites (new in the viewer spec):**
+  - `presign_get(object_key)` + a doctor endpoint returning, per patient report:
+    `{ objectKey, imageUrl (presigned GET), extraction_json, labValues[] }`.
+    RBAC: doctor must be on the patient's consultation (reuse existing guards).
+  - Reads `Report.extraction_json` persisted by §5.4 (why that hook exists here).
+- **Depends on:** this capture/scan workstream (scanned reports + persisted
+  extraction) being in place first.
