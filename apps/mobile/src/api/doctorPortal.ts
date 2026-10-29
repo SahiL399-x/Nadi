@@ -35,6 +35,26 @@ export const DoctorProfileSchema = z.object({
   clinicAddress: z.string(), about: z.string(), photoUrl: z.string(),
 });
 export const NoteSchema = z.object({ id: z.string(), text: z.string(), createdAt: z.string() });
+export const ExtractionFieldSchema = z
+  .object({
+    testNameNormalized: z.string().optional(),
+    testNameRaw: z.string().optional(),
+    valueRaw: z.string().optional(),
+    valueNumeric: z.number().nullable().optional(),
+    unit: z.string().optional(),
+    flag: z.string().optional(),
+    loinc: z.string().optional(),
+  })
+  .passthrough();
+export const ReportViewSchema = z.object({
+  reportId: z.string(),
+  kind: z.enum(['image', 'pdf']),
+  imageUrl: z.string(),
+  date: z.string(),
+  needsReview: z.boolean(),
+  extracted: z.boolean(),
+  fields: z.array(ExtractionFieldSchema),
+});
 
 export type DoctorStats = z.infer<typeof DoctorStatsSchema>;
 export type Appointment = z.infer<typeof AppointmentSchema>;
@@ -45,6 +65,8 @@ export type LabReport = z.infer<typeof LabReportSchema>;
 export type Availability = z.infer<typeof AvailabilitySchema>;
 export type DoctorProfile = z.infer<typeof DoctorProfileSchema>;
 export type Note = z.infer<typeof NoteSchema>;
+export type ExtractionField = z.infer<typeof ExtractionFieldSchema>;
+export type ReportView = z.infer<typeof ReportViewSchema>;
 
 export const getDoctorStats = () => api.get('/v1/doctor/stats', DoctorStatsSchema);
 
@@ -82,3 +104,6 @@ export const addNote = (consultationId: string, text: string) =>
 
 export const listNotes = (consultationId: string) =>
   api.get(`/v1/consultations/${consultationId}/notes`, z.array(NoteSchema));
+
+export const getReportFile = (patientId: string): Promise<ReportView[]> =>
+  api.get(`/v1/doctor/patients/${patientId}/reports`, z.array(ReportViewSchema));
