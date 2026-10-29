@@ -4,6 +4,28 @@ from statistics import median
 _NUM = re.compile(r"^[<>]?\d+(?:\.\d+)?$")
 _RANGE = re.compile(r"\d+(?:\.\d+)?\s*[-–]\s*\d+(?:\.\d+)?")
 
+# Standard clinical qualitative results (urinalysis, serology, microscopy).
+# Domain-curated general terminology — NOT derived from any benchmark gold —
+# so the value detector can accept non-numeric results without mistaking
+# patient/metadata text for a lab value.
+_QUALITATIVE = {
+    "NIL", "ABSENT", "PRESENT", "POSITIVE", "NEGATIVE", "REACTIVE", "NONREACTIVE",
+    "NON REACTIVE", "NON-REACTIVE", "NORMAL", "ABNORMAL", "TRACE", "DETECTED",
+    "NOT DETECTED", "SEEN", "NOT SEEN", "OCCASIONAL", "FEW", "PLENTY", "MANY",
+    "CLEAR", "TURBID", "HAZY", "SLIGHTLY TURBID", "COLOURLESS", "COLORLESS",
+    "PALE YELLOW", "PALE", "YELLOW", "DARK YELLOW", "STRAW", "AMBER", "RED",
+    "REDDISH", "ORANGE", "ACIDIC", "ALKALINE", "NEUTRAL", "WNL",
+}
+_GRADE = re.compile(r"^\+{1,4}$")          # +, ++, +++ gradings
+_FRACTION = re.compile(r"^\d+\s*/\s*\d+$")  # e.g. 6/6 vision acuity
+
+
+def _is_value(text: str) -> bool:
+    if _NUM.match(text):
+        return True
+    u = re.sub(r"\s+", " ", text.strip().upper())
+    return u in _QUALITATIVE or bool(_GRADE.match(u)) or bool(_FRACTION.match(u))
+
 
 def _ymid(box: list[int]) -> int:
     return box[1] + box[3] // 2
@@ -52,9 +74,9 @@ def parse_fields(lines: list[dict]) -> list[dict]:
         cells = sorted(row, key=lambda c: c["box"][0])
         texts = [c["text"].strip() for c in cells]
 
-        value_idx = next((i for i, t in enumerate(texts) if _NUM.match(t)), None)
+        value_idx = next((i for i, t in enumerate(texts) if _is_value(t)), None)
         if value_idx is None or value_idx == 0:
-            continue  # no numeric value, or nothing to the left to name it
+            continue  # no value cell, or nothing to the left to name it
 
         name = " ".join(texts[:value_idx]).strip()
         value_raw = texts[value_idx].lstrip("<>")

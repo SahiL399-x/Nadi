@@ -55,6 +55,43 @@ def test_tall_row_on_highres_scan_groups_name_and_value():
     assert f["referenceRangeRaw"] == "0-0.05"
 
 
+def test_qualitative_values_are_extracted():
+    # Urinalysis / serology results are non-numeric. The value detector must
+    # accept standard clinical result terms, not only numbers.
+    lines = [
+        _line("Colour", 60, 100), _line("PALE YELLOW", 400, 100),
+        _line("Reaction", 60, 200), _line("ACIDIC", 400, 200),
+        _line("Albumin", 60, 300), _line("NIL", 400, 300),
+    ]
+    fields = parse_fields(lines)
+    assert [(f["testNameRaw"], f["valueRaw"]) for f in fields] == [
+        ("Colour", "PALE YELLOW"),
+        ("Reaction", "ACIDIC"),
+        ("Albumin", "NIL"),
+    ]
+
+
+def test_grade_and_fraction_values_are_extracted():
+    lines = [
+        _line("Urine Sugar", 60, 100), _line("+++", 400, 100),
+        _line("Vision R", 60, 200), _line("6/6", 400, 200),
+    ]
+    fields = parse_fields(lines)
+    assert [(f["testNameRaw"], f["valueRaw"]) for f in fields] == [
+        ("Urine Sugar", "+++"),
+        ("Vision R", "6/6"),
+    ]
+
+
+def test_metadata_rows_still_skipped_with_qualitative_support():
+    # Non-result text must NOT be mistaken for a qualitative value.
+    lines = [
+        _line("Doctor Name", 60, 100), _line("Dr Suresh Rao", 400, 100),
+        _line("Referred By", 60, 200), _line("Self", 400, 200),
+    ]
+    assert parse_fields(lines) == []
+
+
 def test_densely_packed_rows_stay_separate():
     # The adaptive grouping must NOT over-merge: tightly spaced small-text rows
     # (~28px tall, ~32px apart) must remain distinct tests.

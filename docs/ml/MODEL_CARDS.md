@@ -53,6 +53,20 @@ _Do not fill in numbers here from memory, estimation, or a partial/manual spot-c
 - **Source JSON**: `apps/ml-service/bench/results/eka_fix1_rowgroup.json`
 - **Date**: 2026-10-29
 
+#### Step-2 Fix #2 — qualitative value extraction (`parse.py`)
+
+- **Change**: the value detector now accepts a cell that is numeric **or** a standard clinical qualitative result (domain-curated vocabulary — NIL/ABSENT/POSITIVE/colours/reactions, `+`/`++`/`+++` gradings, `6/6` fractions). **Not derived from the Eka gold** (standard urinalysis/serology terminology), so the no-contamination rule holds. The "name to the left" guard is unchanged, so metadata rows (`Patient Name | Ramesh`) are still filtered out. 3 new tests in `tests/test_parse.py`; 38/38 ml-service tests green. Motivation: 44 images parsed 0 fields after Fix #1, 33 of them carrying qualitative result tokens.
+- **Same 218 images / 1906 gold tests / PP-OCRv6_medium. Recognition unchanged.** Three-way progression:
+
+| Metric | baseline | Fix #1 | Fix #2 | baseline→Fix#2 Δ (micro/macro) | tests gained |
+|---|---|---|---|---|---|
+| `name_recall`  | 38.7 / 47.6 | 45.8 / 57.0 | **57.6 / 65.1** | +18.9 / +17.5 | 737 → 1097 (+360) |
+| `value_recall` | 35.0 / 43.5 | 41.8 / 52.3 | **51.9 / 59.1** | +16.9 / +15.6 | 667 → 989 (+322) |
+
+- **Remaining gap** (recognition ~80% vs extraction ~58%): fused value+unit cells, column-structured layouts, OCR name-token mismatches, and free-text/uncurated qualitative results. Candidate future work; diminishing returns vs. a trained document-understanding model (which lacks public lab training data — see repo notes).
+- **Source JSON**: `apps/ml-service/bench/results/eka_fix2_qualitative.json`
+- **Date**: 2026-10-29
+
 ### Synthetic fixture — `bench/ocr_eval.py` (CER/pairing harness)
 
 _Separate harness with field-level gold; not yet run on a real dataset._

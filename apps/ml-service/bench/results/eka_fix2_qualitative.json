@@ -1,0 +1,23 @@
+{
+  "n_lab_rows": 202,
+  "n_gold_tests": 1906,
+  "micro_pct": {
+    "ocr_name_in_text": 80.2,
+    "ocr_value_in_text": 92.5,
+    "name_recall": 57.6,
+    "value_recall": 51.9
+  },
+  "macro_pct": {
+    "ocr_name_in_text": 87.1,
+    "ocr_value_in_text": 95.6,
+    "name_recall": 65.1,
+    "value_recall": 59.1
+  },
+  "counts": {
+    "ocr_name_in_text": 1528,
+    "ocr_value_in_text": 1764,
+    "name_recall": 1097,
+    "value_recall": 989
+  },
+  "method": "rubric-derived gold; name match = >=50% token overlap incl. a distinctive token; value match = exact string or float-equal vs any gold value; ocr_*_in_text = gold name/value appears in raw recognized text (recognition signal)."
+}
