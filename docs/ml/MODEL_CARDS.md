@@ -67,6 +67,18 @@ _Do not fill in numbers here from memory, estimation, or a partial/manual spot-c
 - **Source JSON**: `apps/ml-service/bench/results/eka_fix2_qualitative.json`
 - **Date**: 2026-10-29
 
+#### Normalization — NidaanKosha analyte vocabulary (`normalize.py`)
+
+- **Change**: replaced the 9-entry hand alias dict with a **6,569-entry** analyte vocabulary derived offline from **NidaanKosha-100k-V1.0** (Eka Care, CC-BY-SA-4.0; see `docs/ml/DATASET_REGISTER.md` + `app/ocr/data/analyte_vocab.NOTICE.md`). LOINC-anchored synonym→canonical map; `normalize.py` does **exact-normalized-match only** (never fuzzy-guesses an analyte), with the curated aliases kept as a trusted override layer. Each field now also carries a `loinc` code (additive). Unit-mismatch warnings fire only for curated aliases (source units are noisy). 42/42 ml-service tests green (4 new).
+- **Does NOT change the Eka recall metrics above** — the scorer matches the *raw* OCR name, so normalization is invisible to it. The metric it improves is **analyte recognition** (→ canonical names + LOINC + flow into the back-compat `labs[]` list), measured on the Fix #2 predictions (`predictions_v3.json`, 1,244 parsed fields):
+
+| | recognized as a known analyte | distinct analytes |
+|---|---|---|
+| before (9 curated aliases) | 40 / 1244 = **3.2%** | 9 |
+| after (curated + NidaanKosha vocab) | 638 / 1244 = **51.3%** | 279 |
+
+- **Source JSON**: `app/ocr/data/analyte_vocab.json` (committed, CC-BY-SA-4.0). **Build**: `scripts/build_analyte_vocab.py`. **Date**: 2026-10-29
+
 ### Synthetic fixture — `bench/ocr_eval.py` (CER/pairing harness)
 
 _Separate harness with field-level gold; not yet run on a real dataset._

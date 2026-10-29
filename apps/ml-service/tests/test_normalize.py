@@ -39,3 +39,36 @@ def test_unit_mismatch_warns():
 def test_low_confidence_marks_quality_flag():
     res = normalize_fields([_raw("Haemoglobin", "9.1", "g/dL", "12.0 - 15.5", conf=0.40)])
     assert "low_confidence" in res["fields"][0]["qualityFlags"]
+
+
+def test_data_vocab_maps_uncurated_analyte_with_loinc():
+    # Procalcitonin is NOT a hand-curated alias; it comes from the
+    # NidaanKosha-derived vocab, with a LOINC code attached.
+    res = normalize_fields([_raw("PROCALCITONIN", "67.07", "ng/mL")])
+    f = res["fields"][0]
+    assert f["testNameNormalized"] == "Procalcitonin"
+    assert f["loinc"] == "33959-8"
+    assert "unknown_analyte" not in f["qualityFlags"]
+
+
+def test_curated_alias_overrides_data_vocab():
+    # The vocab canonical for HEMOGLOBIN is "Hemoglobin"; the curated alias
+    # ("Haemoglobin") must take precedence.
+    res = normalize_fields([_raw("HEMOGLOBIN", "9.1", "g/dL")])
+    assert res["fields"][0]["testNameNormalized"] == "Haemoglobin"
+
+
+def test_unknown_analyte_kept_raw_with_empty_loinc():
+    res = normalize_fields([_raw("ZZQ RANDOM LABEL", "5.0")])
+    f = res["fields"][0]
+    assert f["testNameNormalized"] == "ZZQ RANDOM LABEL"
+    assert f["loinc"] == ""
+    assert "unknown_analyte" in f["qualityFlags"]
+
+
+def test_data_vocab_unit_mismatch_is_not_warned():
+    # Source units are noisy (gm/dl vs g/dL), so vocab-derived entries must NOT
+    # raise spurious unit_mismatch warnings (only curated aliases do).
+    res = normalize_fields([_raw("PROCALCITONIN", "67.07", "something-odd")])
+    assert "unit_mismatch" not in res["fields"][0]["qualityFlags"]
+    assert not any("unit" in w for w in res["warnings"])
