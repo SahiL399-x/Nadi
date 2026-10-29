@@ -1,3 +1,4 @@
+import json
 import uuid
 from datetime import date
 
@@ -35,18 +36,20 @@ def intake(db: Session, patient_id, inp: TriageInput) -> Consultation:
     db.flush()
 
     labs: list[dict] = []
-    for i, object_key in enumerate(inp.reportImageUris):
+    for object_key in inp.reportImageUris:
         # Use the key the client actually uploaded to (from /v1/uploads/sign)
         # rather than fabricating one, so the real report drives extraction.
+        result = ml_client.document(object_key)
         db.add(
             Report(
                 id=uuid.uuid4(),
                 consultation_id=consult.id,
                 object_key=object_key,
                 ocr_status="done",
+                extraction_json=json.dumps(result),
             )
         )
-        labs.extend(ml_client.document(object_key))
+        labs.extend(result.get("labs", []))
 
     try:
         result = ml_client.triage(

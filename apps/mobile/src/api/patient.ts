@@ -57,7 +57,7 @@ export const consent = (prescriptionId: string, pharmacyIds: string[]) =>
   api.post(`/v1/prescriptions/${prescriptionId}/consent`, { pharmacyIds },
     z.object({ consented: z.boolean(), routedTo: z.string() }));
 
-export const signUpload = () =>
-  api.post('/v1/uploads/sign', {}, z.object({ url: z.string(), objectKey: z.string() }));
+export const signUpload = (body?: { source?: 'scan' | 'upload'; ext?: 'webp' | 'pdf' | 'jpg' | 'png' }) =>
+  api.post('/v1/uploads/sign', body ?? {}, z.object({ url: z.string(), objectKey: z.string() }));
 
 export const patientLocation = () => here();
