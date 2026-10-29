@@ -16,7 +16,30 @@
 
 ## Results
 
-_Intentionally left empty. Do not fill in numbers here from memory, estimation, or a partial/manual spot-check. This section is populated only by copying metrics out of a stored benchmark JSON file produced by `bench/ocr_eval.py` (e.g. `results/eka.json`), per the procedure in `apps/ml-service/bench/README.md`. Each entry must cite the JSON file and the date it was generated._
+_Do not fill in numbers here from memory, estimation, or a partial/manual spot-check. This section is populated only by copying metrics out of a stored benchmark JSON file. Each entry must cite the JSON file and the date it was generated._
+
+### Eka validation set — rubric-derived (real benchmark)
+
+- **Dataset**: `ekacare/medical_records_parsing_validation_set` (gated; lab-report subset). 218 images on disk → 202 rows with gold tests, **1906 gold tests** total.
+- **Model actually served**: **PP-OCRv6_medium** detection + recognition. NOTE: although this card and `pyproject.toml` were written against "PP-OCRv5", `paddleocr==3.7.0` resolves the default pipeline to the **PP-OCRv6_medium** official models (confirmed in the run log — `PP-OCRv6_medium_det` / `PP-OCRv6_medium_rec`). Treat "PP-OCRv5" references as the intended baseline; v6_medium is what ran.
+- **Pipeline**: `run_ocr` → `parse_fields` → `normalize_fields`, **UNCHANGED** (no test-set adaptation — this is the clean baseline before any vocab/parser expansion).
+- **Runtime**: `nadi-ml-gpu` image (paddlepaddle-gpu 3.2.0, cu126) on RTX 3050. 218 images in **857s (~3.9s/image)**, 0 per-image errors.
+- **Metrics** (`score_eka.py`; see `method` in the JSON):
+
+| Metric | micro % | macro % | What it measures |
+|---|---|---|---|
+| `ocr_name_in_text`  | 80.2 | 87.1 | Gold test **name** appears in raw recognized text (OCR recognition) |
+| `ocr_value_in_text` | 92.5 | 95.6 | Gold **value** appears in raw recognized text (OCR recognition) |
+| `name_recall`       | 38.7 | 47.6 | A **parsed field** matches the gold name (recognition + parse) |
+| `value_recall`      | 35.0 | 43.5 | A name-matched parsed field also has the right value (end-to-end) |
+
+- **Key finding**: the large gap between **recognition** (`ocr_name_in_text` 80.2%) and **extraction** (`name_recall` 38.7%) means the loss is in the **parser + alias dictionary, not the OCR engine**. PP-OCRv6 reads the reports well; the structured-field extraction is the bottleneck. This directly motivates the Step-2 expansion (NidaanKosha LOINC vocab + clustering-based row grouping).
+- **Source JSON**: `apps/ml-service/bench/results/eka_baseline.json`
+- **Date**: 2026-10-29
+
+### Synthetic fixture — `bench/ocr_eval.py` (CER/pairing harness)
+
+_Separate harness with field-level gold; not yet run on a real dataset._
 
 | Dataset | n | numeric_accuracy | unit_accuracy | pairing_accuracy | cer | mean_latency_ms | Source JSON | Date |
 |---|---|---|---|---|---|---|---|---|
