@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { api } from '@/api/client';
-import { AcuitySchema } from '@/api/schemas';
 
 export const DoctorStatsSchema = z.object({
   appointmentsToday: z.number(), pending: z.number(), completed: z.number(),
@@ -9,7 +8,7 @@ export const DoctorStatsSchema = z.object({
 export const AppointmentSchema = z.object({
   id: z.string(), patientId: z.string(), patientName: z.string(), patientAge: z.number(),
   patientSex: z.string(), photoUrl: z.string(), time: z.string(), status: z.string(),
-  acuity: AcuitySchema.nullable(), complaint: z.string(),
+  complaint: z.string(),
 });
 export const MedicineSchema = z.object({
   id: z.string(), name: z.string(), strength: z.string(), form: z.string(),

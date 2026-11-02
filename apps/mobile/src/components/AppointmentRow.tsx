@@ -1,5 +1,4 @@
 import { Pressable, Text, View } from 'react-native';
-import { AcuityBadge } from '@/components/ui/AcuityBadge';
 import { Card } from '@/components/ui/Card';
 import type { Appointment } from '@/api/doctorPortal';
 import { colors, spacing, type as t } from '@/theme/tokens';
@@ -18,7 +17,6 @@ export function AppointmentRow({ appt, onPress }: { appt: Appointment; onPress: 
           </View>
           <View style={{ alignItems: 'flex-end', gap: 4 }}>
             <Text style={{ fontSize: t.xs, color: colors.navy, fontWeight: '700' }}>{appt.status}</Text>
-            {appt.acuity ? <AcuityBadge acuity={appt.acuity} /> : null}
           </View>
         </View>
       </Card>

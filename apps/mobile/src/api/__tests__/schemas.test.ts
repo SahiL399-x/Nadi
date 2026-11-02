@@ -10,8 +10,8 @@ test('DoctorSchema accepts a valid doctor with coordinates', () => {
   expect(d.lat).toBeCloseTo(19.99);
 });
 
-test('TriageResultSchema rejects an unknown acuity', () => {
-  expect(() => TriageResultSchema.parse({ acuity: 'MILD' })).toThrow();
+test('TriageResultSchema rejects a missing specialties field', () => {
+  expect(() => TriageResultSchema.parse({ labs: [], modelVersion: 'stub' })).toThrow();
 });
 
 test('TokenPairSchema requires role', () => {

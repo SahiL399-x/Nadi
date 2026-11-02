@@ -11,8 +11,8 @@ beforeEach(() => useSession.setState({ accessToken: 'a', refreshToken: 'r' }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
-const triage = { acuity: 'URGENT', acuityConfidence: 0.8, specialties: [], drivers: [], labs: [], redFlags: [], modelVersion: 's' };
-const item = { id: 'q1', patientId: 'p1', patientName: 'Ramesh', patientAge: 58, patientSex: 'M', acuity: 'URGENT',
+const triage = { specialties: [], labs: [], modelVersion: 's' };
+const item = { id: 'q1', patientId: 'p1', patientName: 'Ramesh', patientAge: 58, patientSex: 'M',
   complaint: 'chest pain', bookedFor: '10:00', triage };
 
 test('getQueue parses items', async () => {

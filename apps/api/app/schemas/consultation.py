@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from app.schemas.common import Acuity, TriageResultOut
+from app.schemas.common import TriageResultOut
 
 
 class IntakeOut(BaseModel):
@@ -19,7 +19,6 @@ class QueueItemOut(BaseModel):
     patientName: str
     patientAge: int
     patientSex: str
-    acuity: Acuity
     complaint: str
     bookedFor: str
     triage: TriageResultOut

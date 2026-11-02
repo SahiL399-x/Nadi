@@ -4,10 +4,13 @@ from app.schemas.doctor import DoctorOut
 
 def test_triage_result_shape():
     t = TriageResultOut(
-        acuity="ROUTINE", acuityConfidence=0.8, specialties=[],
-        drivers=[], labs=[], redFlags=[], modelVersion="stub-keyword-v0",
+        specialties=[], labs=[], modelVersion="stub-keyword-v0",
     )
-    assert t.model_dump()["acuity"] == "ROUTINE"
+    assert t.model_dump()["modelVersion"] == "stub-keyword-v0"
+
+
+def test_triage_result_out_is_specialty_only():
+    assert set(TriageResultOut.model_fields) == {"specialties", "labs", "modelVersion"}
 
 
 def test_doctor_requires_camelcase_fields():

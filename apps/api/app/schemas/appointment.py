@@ -1,7 +1,5 @@
 from pydantic import BaseModel
 
-from app.schemas.common import Acuity
-
 _STATUS_LABEL = {
     "BOOKED": "Upcoming",
     "ARRIVED": "Arrived",
@@ -19,7 +17,6 @@ class AppointmentOut(BaseModel):
     photoUrl: str
     time: str
     status: str
-    acuity: Acuity | None = None
     complaint: str
 
 

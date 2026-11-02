@@ -25,11 +25,9 @@ def test_full_patient_doctor_pharmacy_loop(client, db, monkeypatch):
     from app.services import ml_client
     monkeypatch.setattr(ml_client, "document", lambda k: [])
     monkeypatch.setattr(ml_client, "triage", lambda p: {
-        "acuity": "PRIORITY", "acuityConfidence": 0.8,
         "specialties": [{"name": "General Medicine", "score": 0.8},
                         {"name": "Cardiology", "score": 0.1}, {"name": "ENT", "score": 0.1}],
-        "drivers": [{"feature": "x", "contribution": 0.5}], "labs": [],
-        "redFlags": [], "modelVersion": "stub-keyword-v0"})
+        "labs": [], "modelVersion": "stub-keyword-v0"})
 
     # Unique phones per run: the suite commits to a persistent DB with no rollback
     # fixture, so fixed phone numbers would (a) collide with the same Patient PK on

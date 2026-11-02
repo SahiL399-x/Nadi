@@ -11,14 +11,10 @@ def _stub_ml(monkeypatch):
 
     def fake_triage(payload):
         return {
-            "acuity": "EMERGENCY" if "chest" in payload["symptomText"] else "ROUTINE",
-            "acuityConfidence": 0.9,
             "specialties": [{"name": "Emergency Medicine", "score": 0.8},
                             {"name": "Cardiology", "score": 0.1},
                             {"name": "General Medicine", "score": 0.1}],
-            "drivers": [{"feature": "f", "contribution": 1.0}],
             "labs": payload["labs"],
-            "redFlags": ["chest pain with breathlessness"] if "chest" in payload["symptomText"] else [],
             "modelVersion": "stub-keyword-v0",
         }
 
@@ -36,8 +32,7 @@ def test_intake_then_triage_emergency(client, patient_token, monkeypatch):
     cid = r.json()["consultationId"]
     t = client.get(f"/v1/consultations/{cid}/triage", headers=h)
     assert t.status_code == 200
-    assert t.json()["acuity"] == "EMERGENCY"
-    assert t.json()["redFlags"]
+    assert t.json()["specialties"][0]["name"] == "Emergency Medicine"
     assert t.json()["modelVersion"] == "stub-keyword-v0"
 
 
@@ -63,8 +58,7 @@ def test_intake_persists_extraction_json(client, patient_token, db, monkeypatch)
                      "modelVersion": "test"},
     )
     monkeypatch.setattr(ml_client, "triage", lambda payload: {
-        "acuity": "ROUTINE", "acuityConfidence": 0.6, "specialties": [], "drivers": [],
-        "labs": [], "redFlags": [], "modelVersion": "stub"})
+        "specialties": [], "labs": [], "modelVersion": "stub"})
     r = client.post(
         "/v1/consultations/intake",
         json={"symptomText": "tired", "reportImageUris": ["reports/upload/u/a.webp"], "lang": "en"},

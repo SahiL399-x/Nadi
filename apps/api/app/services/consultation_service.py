@@ -11,8 +11,6 @@ from app.schemas.common import TriageInput, TriageResultOut
 from app.schemas.consultation import QueueItemOut
 from app.services import ml_client
 
-_ACUITY_ORDER = {"EMERGENCY": 0, "URGENT": 1, "PRIORITY": 2, "ROUTINE": 3}
-
 
 def intake(db: Session, patient_id, inp: TriageInput) -> Consultation:
     # Ensure the patient profile exists and carries the age/sex given at intake,
@@ -69,12 +67,8 @@ def intake(db: Session, patient_id, inp: TriageInput) -> Consultation:
         TriageResult(
             id=uuid.uuid4(),
             consultation_id=consult.id,
-            acuity=result["acuity"],
-            acuity_confidence=result["acuityConfidence"],
             specialties=result["specialties"],
-            drivers=result["drivers"],
             labs=result.get("labs", []),
-            red_flags=result["redFlags"],
             model_version=result["modelVersion"],
         )
     )
@@ -146,14 +140,13 @@ def doctor_queue(db: Session, doctor_id) -> list[QueueItemOut]:
             patientName=patient_user.name,
             patientAge=(patient.age if patient and patient.age is not None else 0),
             patientSex=(patient.sex if patient and patient.sex else "O"),
-            acuity=tr.acuity.value,
             complaint=consult.symptom_text_raw,
             bookedFor=consult.booked_for or "",
             triage=TriageResultOut.from_model(tr),
         )
         for consult, tr, patient_user, patient in rows
     ]
-    items.sort(key=lambda i: _ACUITY_ORDER[i.acuity])
+    items.sort(key=lambda i: i.bookedFor)
     return items
 
 
@@ -191,7 +184,6 @@ def doctor_appointments(db: Session, doctor_id, on: date | None) -> list[Appoint
                 photoUrl="",
                 time=(when.strftime("%H:%M") if when else (c.booked_for or "")),
                 status=status_label(c.status.value),
-                acuity=(tr.acuity.value if tr else None),
                 complaint=c.symptom_text_raw,
             )
         )
