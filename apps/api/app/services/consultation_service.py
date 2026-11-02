@@ -124,6 +124,12 @@ def get_for_doctor(db: Session, consultation_id, doctor_id) -> Consultation | No
     return consult
 
 
+def is_participant(db: Session, consultation_id, user: User) -> bool:
+    """True iff the user is the patient or the assigned doctor of the consultation."""
+    consult = db.get(Consultation, consultation_id)
+    return consult is not None and user.id in (consult.patient_id, consult.doctor_id)
+
+
 def doctor_queue(db: Session, doctor_id) -> list[QueueItemOut]:
     rows = db.execute(
         select(Consultation, TriageResult, User, Patient)

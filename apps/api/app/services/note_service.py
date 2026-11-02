@@ -3,13 +3,15 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import Consultation, ConsultationNote, User
+from app.models import ConsultationNote, User
 from app.schemas.note import NoteOut
+from app.services import consultation_service
 
 
 def can_access(db: Session, consultation_id, user: User) -> bool:
-    c = db.get(Consultation, consultation_id)
-    return c is not None and user.id in (c.patient_id, c.doctor_id)
+    # A note is visible to the consultation's participants — the same rule as any
+    # other per-consultation resource (see consultation_service.is_participant).
+    return consultation_service.is_participant(db, consultation_id, user)
 
 
 def add(db: Session, consultation_id, author_id, text: str) -> ConsultationNote:
