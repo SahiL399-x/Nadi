@@ -4,8 +4,7 @@ import { useTriage } from '@/features/patient/useTriage';
 
 jest.mock('@/api/patient', () => ({
   getTriage: jest.fn(async () => ({
-    acuity: 'ROUTINE', acuityConfidence: 0.8, specialties: [], drivers: [], labs: [],
-    redFlags: [], modelVersion: 'stub',
+    specialties: [{ name: 'Cardiology', score: 0.8 }], labs: [], modelVersion: 'stub',
   })),
 }));
 
@@ -15,5 +14,5 @@ const wrap = ({ children }: { children: React.ReactNode }) => (
 
 test('resolves to a triage result', async () => {
   const { result } = await renderHook(() => useTriage('c1'), { wrapper: wrap });
-  await waitFor(() => expect(result.current.data?.acuity).toBe('ROUTINE'));
+  await waitFor(() => expect(result.current.data?.specialties[0]?.name).toBe('Cardiology'));
 });

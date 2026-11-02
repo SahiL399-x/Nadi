@@ -1,5 +1,3 @@
-export type Acuity = 'ROUTINE' | 'PRIORITY' | 'URGENT' | 'EMERGENCY';
-
 export interface LabValue {
   analyte: string; value: number; unit: string; refRange: string; flag: 'L' | 'N' | 'H';
 }
@@ -8,10 +6,8 @@ export interface TriageInput {
   sex?: 'M' | 'F' | 'O'; lang: 'en' | 'hi' | 'mr';
 }
 export interface TriageResult {
-  acuity: Acuity; acuityConfidence: number;
   specialties: { name: string; score: number }[];
-  drivers: { feature: string; contribution: number }[];
-  labs: LabValue[]; redFlags: string[]; modelVersion: string;
+  labs: LabValue[]; modelVersion: string;
 }
 export interface Doctor {
   id: string; name: string; specialty: string; qualifications: string;
@@ -21,7 +17,7 @@ export interface Doctor {
 }
 export interface QueueItem {
   id: string; patientId: string; patientName: string; patientAge: number; patientSex: 'M' | 'F' | 'O';
-  acuity: Acuity; complaint: string; bookedFor: string; triage: TriageResult;
+  complaint: string; bookedFor: string; triage: TriageResult;
 }
 export interface PrescriptionLine {
   drug: string; strength: string; frequency: string; durationDays: number; notes?: string;
@@ -41,7 +37,7 @@ export type AppointmentStatus = 'Upcoming' | 'Arrived' | 'In Progress' | 'Comple
 export interface Appointment {
   id: string; patientId: string; patientName: string; patientAge: number; patientSex: 'M' | 'F' | 'O';
   photoUrl: string; time: string; status: AppointmentStatus;
-  acuity: Acuity | null; complaint: string;
+  complaint: string;
 }
 export interface Medicine { id: string; name: string; strength: string; form: string; }
 export interface DoctorStats {

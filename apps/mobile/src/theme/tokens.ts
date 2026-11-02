@@ -1,5 +1,3 @@
-import type { Acuity } from '@nadi/shared-types';
-
 export const colors = {
   // brand — Nadi logo green for patients, navy for doctors, orange for pharmacy
   brightGreen: '#22B24C', seaGreen: '#2E8B57', green700: '#15803D',
@@ -10,7 +8,7 @@ export const colors = {
   border: '#E6E8F0', text: '#14201C', textMuted: '#5E6B66', textFaint: '#8A958F',
   // soft role tints (card/section backgrounds)
   greenTint: '#E7F8EC', navyTint: '#E8F0FB', orangeTint: '#FFF1E6',
-  // acuity (ProjectPlan §12 — kept)
+  // semantic status colors (used across error/urgent indicators app-wide)
   routine: '#15803D', priority: '#CA8A04', urgent: '#EA580C', emergency: '#B91C1C',
 } as const;
 
@@ -25,12 +23,6 @@ export const shadow = {
     shadowOffset: { width: 0, height: 6 }, elevation: 3,
   },
 } as const;
-
-const ACUITY: Record<Acuity, string> = {
-  ROUTINE: colors.routine, PRIORITY: colors.priority,
-  URGENT: colors.urgent, EMERGENCY: colors.emergency,
-};
-export const acuityColor = (a: Acuity): string => ACUITY[a];
 
 export type Role = 'patient' | 'doctor' | 'pharmacy';
 export type RoleTheme = {

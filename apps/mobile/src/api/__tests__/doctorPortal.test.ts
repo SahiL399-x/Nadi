@@ -20,16 +20,15 @@ test('getDoctorStats parses the dashboard numbers', async () => {
   expect((await getDoctorStats()).prescriptionsIssued).toBe(6);
 });
 
-test('getAppointments passes the date and parses rows with a nullable acuity', async () => {
+test('getAppointments passes the date and parses rows', async () => {
   let seen = '';
   server.use(http.get(`${BASE}/v1/doctor/appointments`, ({ request }) => {
     seen = new URL(request.url).searchParams.get('date') ?? '';
     return HttpResponse.json([{ id: 'c1', patientId: 'p1', patientName: 'Ramesh', patientAge: 58,
-      patientSex: 'M', photoUrl: 'x', time: '10:00', status: 'BOOKED', acuity: null, complaint: 'chest pain' }]);
+      patientSex: 'M', photoUrl: 'x', time: '10:00', status: 'BOOKED', complaint: 'chest pain' }]);
   }));
   const rows = await getAppointments('2026-10-20');
   expect(seen).toBe('2026-10-20');
-  expect(rows[0]!.acuity).toBeNull();
   expect(rows[0]!.patientId).toBe('p1');
 });
 

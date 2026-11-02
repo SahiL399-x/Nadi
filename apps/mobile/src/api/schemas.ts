@@ -1,7 +1,5 @@
 import { z } from 'zod';
 
-export const AcuitySchema = z.enum(['ROUTINE', 'PRIORITY', 'URGENT', 'EMERGENCY']);
-
 export const TokenPairSchema = z.object({
   accessToken: z.string(), refreshToken: z.string(),
   role: z.enum(['patient', 'doctor', 'pharmacy']), userId: z.string(),
@@ -13,10 +11,8 @@ export const LabValueSchema = z.object({
 });
 
 export const TriageResultSchema = z.object({
-  acuity: AcuitySchema, acuityConfidence: z.number(),
   specialties: z.array(z.object({ name: z.string(), score: z.number() })),
-  drivers: z.array(z.object({ feature: z.string(), contribution: z.number() })),
-  labs: z.array(LabValueSchema), redFlags: z.array(z.string()), modelVersion: z.string(),
+  labs: z.array(LabValueSchema), modelVersion: z.string(),
 });
 export const TriagePendingSchema = z.object({ status: z.literal('pending') });
 export const TriageResponseSchema = z.union([TriagePendingSchema, TriageResultSchema]);
@@ -31,7 +27,7 @@ export const DoctorSchema = z.object({
 
 export const QueueItemSchema = z.object({
   id: z.string(), patientId: z.string(), patientName: z.string(), patientAge: z.number(),
-  patientSex: z.enum(['M', 'F', 'O']), acuity: AcuitySchema, complaint: z.string(),
+  patientSex: z.enum(['M', 'F', 'O']), complaint: z.string(),
   bookedFor: z.string(), triage: TriageResultSchema,
 });
 
