@@ -1,31 +1,19 @@
-import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Enum, Float, ForeignKey, String
+from sqlalchemy import ForeignKey, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, created_at_col, uuid_pk
 
 
-class Acuity(str, enum.Enum):
-    ROUTINE = "ROUTINE"
-    PRIORITY = "PRIORITY"
-    URGENT = "URGENT"
-    EMERGENCY = "EMERGENCY"
-
-
 class TriageResult(Base):
     __tablename__ = "triage_results"
     id: Mapped[uuid.UUID] = uuid_pk()
     consultation_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("consultations.id"))
-    acuity: Mapped[Acuity] = mapped_column(Enum(Acuity, name="acuity"))
-    acuity_confidence: Mapped[float] = mapped_column(Float)
     specialties = mapped_column(JSONB)      # [{name, score}]
-    drivers = mapped_column(JSONB)          # [{feature, contribution}]
     labs = mapped_column(JSONB)             # [LabValue] extracted from reports
-    red_flags = mapped_column(JSONB)        # [str]
     model_version: Mapped[str] = mapped_column(String)   # MANDATORY
     created_at: Mapped[datetime] = created_at_col()
 

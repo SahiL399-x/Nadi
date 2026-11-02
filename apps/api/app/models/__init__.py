@@ -13,11 +13,10 @@ from app.models.prescription import (
     PrescriptionLine,
     PrescriptionStatus,
 )
-from app.models.triage import Acuity, Referral, TriageResult
+from app.models.triage import Referral, TriageResult
 from app.models.user import Doctor, Patient, Pharmacy, Role, User
 
 __all__ = [
-    "Acuity",
     "AuditLog",
     "Base",
     "Consultation",
