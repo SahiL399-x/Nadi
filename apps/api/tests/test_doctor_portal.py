@@ -15,24 +15,26 @@ def _doctor_token(client, db):
     return r.json()["accessToken"], r.json()["userId"]
 
 
-def test_queue_sorted_emergency_first(client, db):
+def test_queue_sorted_by_booked_time(client, db):
+    import uuid
+    from app.models import Consultation, ConsultationStatus, Patient, Role, TriageResult, User
     token, doctor_id = _doctor_token(client, db)
     pid = uuid.uuid4()
     db.add(User(id=pid, phone=f"+91{uuid.uuid4().int % 10**10:010d}", role=Role.patient, name="P"))
     db.flush()
     db.add(Patient(user_id=pid, age=40, sex="M"))
-    for acuity in ("ROUTINE", "EMERGENCY"):
+    for slot in ("14:00", "09:00"):
         cid = uuid.uuid4()
         db.add(Consultation(id=cid, patient_id=pid, doctor_id=doctor_id,
-                            status=ConsultationStatus.BOOKED, symptom_text_raw="x", booked_for="10:00"))
+                            status=ConsultationStatus.BOOKED, symptom_text_raw="x", booked_for=slot))
         db.flush()
-        db.add(TriageResult(id=uuid.uuid4(), consultation_id=cid, acuity=acuity,
-                            acuity_confidence=0.9, specialties=[], drivers=[], red_flags=[],
+        db.add(TriageResult(id=uuid.uuid4(), consultation_id=cid, specialties=[], labs=[],
                             model_version="stub-keyword-v0"))
     db.commit()
     r = client.get("/v1/doctor/queue", headers={"Authorization": f"Bearer {token}"})
     assert r.status_code == 200
-    assert r.json()[0]["acuity"] == "EMERGENCY"
+    bookings = [q["bookedFor"] for q in r.json()]
+    assert bookings == sorted(bookings)
 
 
 def test_appointments_expose_patient_id(client, doctor_token):
