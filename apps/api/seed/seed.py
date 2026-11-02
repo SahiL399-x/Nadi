@@ -295,7 +295,7 @@ def run(db) -> None:
         microsecond=0
     )  # NOTE: seed runs at container start; fine for demo
     done_cids: list[uuid.UUID] = []
-    for i, (pname, age, sex, acuity, complaint) in enumerate(QUEUE):
+    for i, (pname, age, sex, _acuity, complaint) in enumerate(QUEUE):
         pat_uid = uuid.uuid4()
         db.add(
             User(id=pat_uid, phone=f"+9150000300{i:02d}", role=Role.patient, name=pname, lang="hi")
@@ -323,15 +323,11 @@ def run(db) -> None:
             TriageResult(
                 id=uuid.uuid4(),
                 consultation_id=cid,
-                acuity=acuity,
-                acuity_confidence=0.9,
                 specialties=[
                     {"name": "General Medicine", "score": 0.8},
                     {"name": "Cardiology", "score": 0.1},
                     {"name": "ENT", "score": 0.1},
                 ],
-                drivers=[{"feature": "symptom", "contribution": 0.5}],
-                red_flags=["chest pain with breathlessness"] if acuity == "EMERGENCY" else [],
                 model_version="stub-keyword-v0",
             )
         )
