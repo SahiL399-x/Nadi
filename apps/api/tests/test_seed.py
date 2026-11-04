@@ -30,3 +30,30 @@ def test_seed_is_idempotent(db):
     first = len(db.scalars(select(Doctor)).all())
     run(db)
     assert len(db.scalars(select(Doctor)).all()) == first
+
+
+def test_seeded_doctors_have_specialty_aligned_keywords(db):
+    run(db)
+    doctors = db.scalars(select(Doctor)).all()
+    with_keywords = [d for d in doctors if d.keywords]
+    assert with_keywords
+    for d in with_keywords:
+        for kw in d.keywords:
+            assert kw == kw.lower()
+
+    # A bulk-seeded (non-demo) General Medicine doctor carries the "fever"
+    # routing term — checked on the bulk roster rather than the demo account
+    # because other tests authenticate as the demo doctor and overwrite its
+    # keywords via the profile API, which would make this assertion flaky.
+    demo = db.scalar(
+        select(Doctor)
+        .join(User, User.id == Doctor.user_id)
+        .where(User.phone == "+915000000001")
+    )
+    assert demo is not None
+    assert demo.keywords
+
+    gen_med = next(
+        d for d in doctors if d.specialty == "General Medicine" and d.user_id != demo.user_id
+    )
+    assert "fever" in gen_med.keywords
