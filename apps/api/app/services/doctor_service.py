@@ -69,6 +69,50 @@ def search(
     return result
 
 
+def recommend(
+    db: Session,
+    query: str,
+    specialty: str | None,
+    lat: float,
+    lng: float,
+    radius_km: float,
+    lang: str | None,
+) -> list[DoctorOut]:
+    tokens = normalize_keywords(query.split(), cap=20)
+    if tokens:
+        pt = _point(lat, lng)
+        dist = ST_Distance(Doctor.location, pt)
+        lat_col, lng_col = _lat_lng_cols()
+        # Substring matching is the single authoritative matcher: it already
+        # includes exact-token hits (t in kw or kw in t is true when t == kw),
+        # so it is a complete superset of the old ARRAY && ARRAY exact query.
+        # Using it alone avoids silently dropping substring-only matches.
+        rows = _substring_matches(db, tokens, pt, dist, lat_col, lng_col, radius_km)
+        if rows:
+            result = [_to_out(d, n, dm / 1000.0, la, lo) for (d, n, dm, la, lo) in rows]
+            demo = _demo_doctor(db)
+            if demo is not None:
+                result = [demo] + [r for r in result if r.id != demo.id]
+            return result
+    return search(db, specialty, lat, lng, radius_km, lang)
+
+
+def _substring_matches(db: Session, tokens, pt, dist, lat_col, lng_col, radius_km):
+    rows = db.execute(
+        select(Doctor, User.name, dist, lat_col, lng_col)
+        .join(User, User.id == Doctor.user_id)
+        .where(ST_DWithin(Doctor.location, pt, radius_km * 1000))
+        .order_by(Doctor.rating.desc(), Doctor.review_count.desc(), dist.asc())
+    ).all()
+    out = []
+    for (d, n, dm, la, lo) in rows:
+        for kw in (d.keywords or []):
+            if any(t in kw or kw in t for t in tokens):
+                out.append((d, n, dm, la, lo))
+                break
+    return out
+
+
 DEMO_DOCTOR_PHONE = "+915000000001"
 
 
