@@ -2,7 +2,7 @@ import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import {
   getDoctorStats, getAppointments, searchMedicines, getPatient,
-  putAvailability, updateDoctorProfile, listNotes,
+  putAvailability, updateDoctorProfile, listNotes, DoctorProfileSchema,
 } from '@/api/doctorPortal';
 import { useSession } from '@/store/session';
 
@@ -66,6 +66,15 @@ test('updateDoctorProfile sends only editable fields', async () => {
     name: 'Dr A', specialty: 'Cardiology', qualifications: 'MBBS, MD', experienceYears: 12,
     clinicAddress: 'New addr', about: 'Updated', photoUrl: 'x' })));
   expect((await updateDoctorProfile({ clinicAddress: 'New addr' })).clinicAddress).toBe('New addr');
+});
+
+test('DoctorProfileSchema parses keywords', () => {
+  const p = DoctorProfileSchema.parse({
+    name: 'Dr A', specialty: 'Cardiology', qualifications: 'MBBS',
+    experienceYears: 5, clinicAddress: '', about: '', photoUrl: '',
+    keywords: ['chest pain', 'bp'],
+  });
+  expect(p.keywords).toEqual(['chest pain', 'bp']);
 });
 
 test('listNotes parses the private notebook', async () => {

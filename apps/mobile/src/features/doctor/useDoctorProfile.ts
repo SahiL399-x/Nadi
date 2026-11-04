@@ -6,7 +6,7 @@ export function useDoctorProfile() {
   const qc = useQueryClient();
   const q = useQuery({ queryKey: ['doctorProfile'], queryFn: getDoctorProfile });
   const [saving, setSaving] = useState(false);
-  const save = async (body: { clinicAddress?: string; about?: string }) => {
+  const save = async (body: Parameters<typeof updateDoctorProfile>[0]) => {
     setSaving(true);
     try {
       await updateDoctorProfile(body);

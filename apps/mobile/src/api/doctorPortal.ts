@@ -32,6 +32,7 @@ export const AvailabilitySchema = z.object({
 export const DoctorProfileSchema = z.object({
   name: z.string(), specialty: z.string(), qualifications: z.string(), experienceYears: z.number(),
   clinicAddress: z.string(), about: z.string(), photoUrl: z.string(),
+  keywords: z.array(z.string()).default([]),
 });
 export const NoteSchema = z.object({ id: z.string(), text: z.string(), createdAt: z.string() });
 export const ExtractionFieldSchema = z
@@ -95,8 +96,9 @@ export const putAvailability = (days: Availability[]) =>
 
 export const getDoctorProfile = () => api.get('/v1/doctor/profile', DoctorProfileSchema);
 
-export const updateDoctorProfile = (body: { clinicAddress?: string; about?: string }) =>
-  api.put('/v1/doctor/profile', body, DoctorProfileSchema);
+export const updateDoctorProfile = (body: {
+  clinicAddress?: string; about?: string; qualifications?: string; experienceYears?: number; keywords?: string[];
+}) => api.put('/v1/doctor/profile', body, DoctorProfileSchema);
 
 export const addNote = (consultationId: string, text: string) =>
   api.post(`/v1/consultations/${consultationId}/notes`, { text }, z.object({ id: z.string() }));
