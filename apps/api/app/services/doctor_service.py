@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.models import Doctor, User
 from app.schemas.doctor import DoctorOut
 from app.schemas.doctor_profile import DoctorProfileOut
+from app.services.keyword_util import normalize_keywords
 
 _SLOTS = ["09:00", "09:30", "10:00", "11:00", "14:00", "16:30"]
 
@@ -110,10 +111,20 @@ def profile(db: Session, doctor_id) -> DoctorProfileOut | None:
         clinicAddress=doctor.clinic_address,
         about=doctor.about,
         photoUrl=doctor.photo_url,
+        keywords=list(doctor.keywords),
     )
 
 
-def update_profile(db: Session, doctor_id, clinic_address, about):
+def update_profile(
+    db: Session,
+    doctor_id,
+    *,
+    clinic_address=None,
+    about=None,
+    qualifications=None,
+    experience_years=None,
+    keywords=None,
+):
     doctor = db.get(Doctor, doctor_id)
     if doctor is None:
         return None
@@ -121,5 +132,11 @@ def update_profile(db: Session, doctor_id, clinic_address, about):
         doctor.clinic_address = clinic_address
     if about is not None:
         doctor.about = about
+    if qualifications is not None:
+        doctor.qualifications = qualifications
+    if experience_years is not None:
+        doctor.experience_years = experience_years
+    if keywords is not None:
+        doctor.keywords = normalize_keywords(keywords)
     db.commit()
     return profile(db, doctor_id)
