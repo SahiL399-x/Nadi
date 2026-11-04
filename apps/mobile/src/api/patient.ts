@@ -31,11 +31,12 @@ export const getTriage = (id: string) =>
 export const getConsultation = (id: string) =>
   api.get(`/v1/consultations/${id}`, ConsultationDetailSchema);
 
-export const searchDoctors = (p: { specialty?: string; lang?: string }): Promise<Doctor[]> => {
+export const searchDoctors = (p: { specialty?: string; lang?: string; q?: string }): Promise<Doctor[]> => {
   const { lat, lng } = here();
   const q = new URLSearchParams({ lat: String(lat), lng: String(lng), radiusKm: '50' });
   if (p.specialty) q.set('specialty', p.specialty);
   if (p.lang) q.set('lang', p.lang);
+  if (p.q) q.set('q', p.q);
   return api.get(`/v1/doctors?${q.toString()}`, z.array(DoctorSchema));
 };
 

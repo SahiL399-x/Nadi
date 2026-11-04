@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { router, useLocalSearchParams } from 'expo-router';
 import { List as ListIcon, MapPin } from 'lucide-react-native';
 import { DoctorCard } from '@/components/DoctorCard';
+import { Input } from '@/components/ui/Input';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -13,9 +14,20 @@ import { useLocation } from '@/store/location';
 import { placeNear } from '@/lib/geo';
 import { colors, radii, shadow, spacing, type as t } from '@/theme/tokens';
 
+const SEARCH_DEBOUNCE_MS = 400;
+
 export default function Doctors() {
   const { id, specialty } = useLocalSearchParams<{ id?: string; specialty: string }>();
-  const { data, isLoading, isError, refetch } = useDoctors(specialty || undefined);
+  const [search, setSearch] = useState('');
+  const [q, setQ] = useState('');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    debounceRef.current = setTimeout(() => setQ(search.trim()), SEARCH_DEBOUNCE_MS);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [search]);
+
+  const { data, isLoading, isError, refetch } = useDoctors(specialty || undefined, q || undefined);
   const { lat, lng } = useLocation();
   const [map, setMap] = useState(false);
   // Show doctors near the patient's current location (demo): distances are derived
@@ -35,6 +47,7 @@ export default function Doctors() {
       <View style={{ padding: spacing.lg, paddingBottom: spacing.sm, gap: spacing.sm }}>
         <Text style={{ fontSize: t.h2, fontWeight: '800', color: colors.text }}>{specialty || 'All doctors'}</Text>
         <Text style={{ fontSize: t.sm, color: colors.textMuted }}>{doctors.length} available near you</Text>
+        <Input value={search} onChangeText={setSearch} placeholder="Search by symptom or keyword" />
         <View style={{ flexDirection: 'row', alignSelf: 'flex-start', backgroundColor: colors.surface,
           borderRadius: radii.pill, padding: 4, ...shadow.card }}>
           <Seg active={!map} label="List" icon={<ListIcon size={16} color={!map ? colors.white : colors.textMuted} />} onPress={() => setMap(false)} />

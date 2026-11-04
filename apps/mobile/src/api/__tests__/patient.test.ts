@@ -23,6 +23,16 @@ test('searchDoctors parses the list', async () => {
   expect(list[0]!.lat).toBeCloseTo(19.99);
 });
 
+test('searchDoctors forwards q', async () => {
+  let capturedUrl = '';
+  server.use(http.get(`${BASE}/v1/doctors`, ({ request }) => {
+    capturedUrl = request.url;
+    return HttpResponse.json([doctor]);
+  }));
+  await searchDoctors({ q: 'headache' });
+  expect(capturedUrl).toContain('q=headache');
+});
+
 test('getTriage returns pending then result', async () => {
   server.use(http.get(`${BASE}/v1/consultations/c1/triage`, () => HttpResponse.json({ status: 'pending' })));
   const res = await getTriage('c1');
