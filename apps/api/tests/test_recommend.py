@@ -46,10 +46,30 @@ def test_exact_and_substring_matches_both_returned(db):
 
 
 def test_endpoint_q_uses_keyword_path(client, db):
+    # Smoke test only: with no specialty filter, search()'s default (no
+    # filter) would also surface this doctor, so this test alone cannot
+    # distinguish "q routed through recommend()" from "q was ignored".
+    # test_endpoint_q_routes_to_recommend below is the real guard for the
+    # `if q:` branch in the router.
     _doc(db, "Dr KW", "General Medicine", 4.8, ["migraine", "headache"])
     r = client.get("/v1/doctors", params={"q": "headache"})
     assert r.status_code == 200
     assert any("Dr KW" == d["name"] for d in r.json())
+
+
+def test_endpoint_q_routes_to_recommend(client, db):
+    # Discriminating regression guard for the `if q:` branch in
+    # routers/doctors.py. The seeded doctor's specialty ("General Medicine")
+    # deliberately conflicts with the specialty query param ("Cardiology").
+    # recommend()'s keyword path matches on keywords and ignores the
+    # specialty filter once keywords hit, so this doctor must be returned.
+    # If the `if q:` branch were removed, the router would instead call
+    # search(specialty="Cardiology"), which filters by specialty and would
+    # EXCLUDE this General-Medicine doctor -> the assertion below would fail.
+    _doc(db, "Dr Neuralgia", "General Medicine", 4.2, ["neuralgia"])
+    r = client.get("/v1/doctors", params={"q": "neuralgia", "specialty": "Cardiology"})
+    assert r.status_code == 200
+    assert any("Dr Neuralgia" == d["name"] for d in r.json())
 
 
 def test_endpoint_without_q_is_specialty_search(client, db):
