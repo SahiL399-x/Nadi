@@ -9,9 +9,11 @@ router = APIRouter(prefix="/v1/doctors", tags=["doctors"])
 
 
 @router.get("", response_model=list[DoctorOut])
-def search(specialty: str | None = None, lat: float = 19.9975, lng: float = 73.7898,
-           radiusKm: float = 50.0, lang: str | None = None,
+def search(specialty: str | None = None, q: str | None = None, lat: float = 19.9975,
+           lng: float = 73.7898, radiusKm: float = 50.0, lang: str | None = None,
            db: Session = Depends(get_db)) -> list[DoctorOut]:
+    if q:
+        return doctor_service.recommend(db, q, specialty, lat, lng, radiusKm, lang)
     return doctor_service.search(db, specialty, lat, lng, radiusKm, lang)
 
 

@@ -43,3 +43,24 @@ def test_exact_and_substring_matches_both_returned(db):
     ids = {x.id for x in out}
     assert exact in ids
     assert substring in ids
+
+
+def test_endpoint_q_uses_keyword_path(client, db):
+    _doc(db, "Dr KW", "General Medicine", 4.8, ["migraine", "headache"])
+    r = client.get("/v1/doctors", params={"q": "headache"})
+    assert r.status_code == 200
+    assert any("Dr KW" == d["name"] for d in r.json())
+
+
+def test_endpoint_without_q_is_specialty_search(client, db):
+    _doc(db, "Dr Cardio", "Cardiology", 4.5, ["chest pain"])
+    r = client.get("/v1/doctors", params={"specialty": "Cardiology"})
+    assert r.status_code == 200
+    results = r.json()
+    # The pinned demo doctor (seeded, phone +915000000001) is exempt from the
+    # specialty filter by design; every other returned doctor must match.
+    demo = doctor_service._demo_doctor(db)
+    demo_id = demo.id if demo is not None else None
+    non_demo = [d for d in results if d["id"] != demo_id]
+    assert len(non_demo) > 0
+    assert all(d["specialty"] == "Cardiology" for d in non_demo)
