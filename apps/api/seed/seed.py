@@ -40,6 +40,22 @@ _SURNAMES = ["Deshmukh", "Kulkarni", "Patil", "Joshi", "Nair", "Rao", "Iyer", "S
 _LANG_SETS = [["Hindi", "Marathi", "English"], ["Hindi", "English"], ["Marathi", "English"], ["Hindi", "Marathi"]]
 _QUALS = ["MBBS", "MBBS, MD", "MBBS, MD, DM", "MBBS, MS", "MBBS, DNB", "MBBS, MD, DNB"]
 
+# specialty -> short, lowercase keyword list used by the patient-facing keyword
+# search path. Covers every specialty in _SPECIALTIES plus the demo doctor's
+# "General Medicine". Anything else falls back to _DEFAULT_KEYWORDS below.
+_SPECIALTY_KEYWORDS: dict[str, list[str]] = {
+    "General Physician": ["fever", "cold", "cough", "weakness", "checkup"],
+    "General Medicine": ["fever", "diabetes", "thyroid", "weakness", "nausea"],
+    "Cardiology": ["chest pain", "heart", "palpitations", "bp", "hypertension"],
+    "Dermatology": ["skin", "rash", "acne", "allergy", "itching"],
+    "Paediatrics": ["child fever", "vaccination", "cough", "growth", "infant"],
+    "Gynaecology": ["pregnancy", "periods", "pcos", "pelvic pain", "fertility"],
+    "Orthopaedics": ["back pain", "joint pain", "fracture", "knee", "arthritis"],
+    "ENT": ["ear pain", "sore throat", "sinus", "hearing", "nose block"],
+    "Haematology": ["anaemia", "blood disorder", "bleeding", "fatigue", "clotting"],
+}
+_DEFAULT_KEYWORDS = ["fever", "checkup", "consultation", "general"]
+
 
 def _portrait(gender: str, n: int) -> str:
     # randomuser.me portraits: free, gender-labelled, stable per index.
@@ -244,6 +260,7 @@ def run(db) -> None:
                 review_count=reviews,
                 is_verified=True,
                 photo_url=photo,
+                keywords=_SPECIALTY_KEYWORDS.get(spec, _DEFAULT_KEYWORDS),
             )
         )
 
@@ -287,6 +304,10 @@ def run(db) -> None:
             photo_url="https://randomuser.me/api/portraits/men/32.jpg",
             clinic_address="Mital Nagar, Nashik",
             about="General physician, 10 years' experience.",
+            keywords=[
+                "fever", "diabetes", "thyroid", "weakness", "nausea",
+                "cough", "cold", "checkup",
+            ],
         )
     )
     db.flush()
