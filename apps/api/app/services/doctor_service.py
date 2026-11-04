@@ -83,17 +83,11 @@ def recommend(
         pt = _point(lat, lng)
         dist = ST_Distance(Doctor.location, pt)
         lat_col, lng_col = _lat_lng_cols()
-        stmt = (
-            select(Doctor, User.name, dist, lat_col, lng_col)
-            .join(User, User.id == Doctor.user_id)
-            .where(ST_DWithin(Doctor.location, pt, radius_km * 1000))
-            .where(Doctor.keywords.op("&&")(tokens))  # ARRAY && ARRAY: exact-token hits
-            .order_by(Doctor.rating.desc(), Doctor.review_count.desc(), dist.asc())
-        )
-        rows = db.execute(stmt).all()
-        # Substring widening: also include doctors whose keyword contains/was contained by a token.
-        if not rows:
-            rows = _substring_matches(db, tokens, pt, dist, lat_col, lng_col, radius_km)
+        # Substring matching is the single authoritative matcher: it already
+        # includes exact-token hits (t in kw or kw in t is true when t == kw),
+        # so it is a complete superset of the old ARRAY && ARRAY exact query.
+        # Using it alone avoids silently dropping substring-only matches.
+        rows = _substring_matches(db, tokens, pt, dist, lat_col, lng_col, radius_km)
         if rows:
             result = [_to_out(d, n, dm / 1000.0, la, lo) for (d, n, dm, la, lo) in rows]
             demo = _demo_doctor(db)

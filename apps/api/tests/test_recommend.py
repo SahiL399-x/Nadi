@@ -31,3 +31,15 @@ def test_no_keyword_hit_falls_back_to_specialty(db):
     d = _doc(db, "Dr Derm", "Dermatology", 4.0, ["rash", "acne"])
     out = doctor_service.recommend(db, "xyzzy-nomatch", "Dermatology", NASHIK_LAT, NASHIK_LNG, 50.0, None)
     assert d in [x.id for x in out] or any(x.specialty == "Dermatology" for x in out)
+
+
+def test_exact_and_substring_matches_both_returned(db):
+    # Doctor A matches the query token exactly; doctor B only matches via
+    # substring containment ("sugar" is a substring of "sugary"). Both must
+    # appear in recommend() output — neither should be silently dropped.
+    exact = _doc(db, "Dr Exact", "General Medicine", 4.0, ["sugar"])
+    substring = _doc(db, "Dr Substring", "General Medicine", 4.0, ["sugary"])
+    out = doctor_service.recommend(db, "sugar", None, NASHIK_LAT, NASHIK_LNG, 50.0, None)
+    ids = {x.id for x in out}
+    assert exact in ids
+    assert substring in ids
