@@ -44,6 +44,7 @@ class Doctor(Base):
     experience_years: Mapped[int] = mapped_column(Integer, default=0)
     fee_inr: Mapped[int] = mapped_column(Integer, default=0)
     languages: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
+    keywords: Mapped[list[str]] = mapped_column(ARRAY(String), default=list)
     location = mapped_column(
         Geography(geometry_type="POINT", srid=4326, spatial_index=False), nullable=True
     )
